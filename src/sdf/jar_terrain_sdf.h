@@ -40,13 +40,13 @@ class JarTerrainSdf : public JarSignedDistanceField
     }
 
   protected:
-    float sample_height(const Vector2 &pos)
+    float sample_height(const Vector2 &pos) const
     {
         float noise = _noiseLite->get_noise_2d(pos.x, pos.y);
         return _heightScale * (noise > 0 ? 2.0f * noise : 1.0f * noise);
     }
 
-    Vector2 sample_gradient(const Vector2 &pos, float height)
+    Vector2 sample_gradient(const Vector2 &pos, float height) const
     {
         float heightX = sample_height(pos + Vector2(Epsilon, 0));
         float heightZ = sample_height(pos + Vector2(0, Epsilon));
@@ -57,7 +57,7 @@ class JarTerrainSdf : public JarSignedDistanceField
         return Vector2(gradientX, gradientZ);
     }
 
-    virtual float distance(const glm::vec3 &pos) override
+    virtual float distance(const glm::vec3 &pos) const override
     {
         Vector2 samplePos(pos.x, pos.z);
         float height = sample_height(samplePos);

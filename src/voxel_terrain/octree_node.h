@@ -34,7 +34,7 @@ template <typename TNode> class OctreeNode
         return _children == nullptr;
     }
 
-    inline float edge_length(float scale) const
+    inline float edge_length(const float scale) const
     {
         return (1 << _size) * scale;
     }
@@ -45,13 +45,13 @@ template <typename TNode> class OctreeNode
         _children = nullptr;
     }
 
-    Bounds get_bounds(float scale) const
+    inline Bounds get_bounds(const float scale) const
     {
         auto halfEdge = glm::vec3(edge_length(scale) * 0.5f);
         return Bounds(_center - halfEdge, _center + halfEdge);
     }
 
-    void subdivide(float scale)
+    void subdivide(const float scale)
     {
         if (_size <= min_size() || !is_leaf())
             return;
@@ -82,11 +82,11 @@ template <typename TNode> class OctreeNode
     }
 
   protected:
-    virtual int min_size() const
+    inline virtual int min_size() const
     {
         return 0;
     }
-    virtual TNode* create_child_node(const glm::vec3 &center, int size) = 0;
+    inline virtual TNode* create_child_node(const glm::vec3 &center, int size) = 0;
 };
 
 #endif // OCTREE_NODE_H

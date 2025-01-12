@@ -7,18 +7,21 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <optional>
+#include "sdf_operations.h"
 
 using namespace godot;
 
 class JarSignedDistanceField : public Resource
 {
+
+
     GDCLASS(JarSignedDistanceField, Resource);
 
   public:
     virtual ~JarSignedDistanceField() = default;
 
     std::optional<glm::vec3> ray_march(const glm::vec3 &from, const glm::vec3 &dir, float epsilon = 0.01f,
-                                       int maxSteps = 100)
+                                       int maxSteps = 100) const
     {
         glm::vec3 currentPos = from;
         for (int i = 0; i < maxSteps; i++)
@@ -31,7 +34,7 @@ class JarSignedDistanceField : public Resource
         return std::nullopt;
     }
 
-    inline glm::vec3 normal(const glm::vec3 &pos)
+    inline glm::vec3 normal(const glm::vec3 &pos) const
     {
         const static float delta = 0.001f;
         const static glm::vec3 xyy(delta, -delta, -delta);
@@ -42,12 +45,13 @@ class JarSignedDistanceField : public Resource
                               xxx * distance(pos + xxx));
     }
 
-    virtual float distance(const glm::vec3 &pos) = 0;
+    virtual float distance(const glm::vec3 &pos) const = 0;
 
   protected:
     static void _bind_methods()
     {
-        // Binding methods for Godot
+        // Binding methods for Godot        
+
     }
 };
 

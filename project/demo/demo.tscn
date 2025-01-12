@@ -1,16 +1,13 @@
-[gd_scene load_steps=10 format=3 uid="uid://dopxpjgtfffh4"]
+[gd_scene load_steps=11 format=3 uid="uid://dopxpjgtfffh4"]
 
-[ext_resource type="PackedScene" uid="uid://c7kqgl1k10x14" path="res://addons/jar_voxel_terrain/src/chunk.tscn" id="1_eckxc"]
+[ext_resource type="PackedScene" uid="uid://c7kqgl1k10x14" path="res://addons/jar_voxel_terrain/src/chunk.tscn" id="1_0cm30"]
+[ext_resource type="JarTerrainSdf" uid="uid://3jlwgf5biu2x" path="res://demo/terrain_sdf.tres" id="1_kdhtt"]
 [ext_resource type="Script" path="res://demo/movable_camera.gd" id="2_kdd2p"]
+[ext_resource type="Script" path="res://demo/terrain_editor.gd" id="3_8rpa4"]
 [ext_resource type="PackedScene" uid="uid://dssyh6xc7ljec" path="res://demo/ball.tscn" id="3_hls1k"]
 
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_xe4yj"]
-frequency = 0.001
-fractal_weighted_strength = 0.83
-
-[sub_resource type="JarTerrainSdf" id="JarTerrainSdf_fql5r"]
-noise = SubResource("FastNoiseLite_xe4yj")
-height_scale = 128.0
+[sub_resource type="JarSphereSdf" id="JarSphereSdf_0ru4y"]
+radius = 10.0
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_tctin"]
 
@@ -26,14 +23,19 @@ sky = SubResource("Sky_vgllt")
 [node name="Demo" type="Node3D"]
 
 [node name="JarVoxelTerrain" type="JarVoxelTerrain" parent="."]
-lod_distance = 64.0
-chunk_scene = ExtResource("1_eckxc")
-sdf = SubResource("JarTerrainSdf_fql5r")
+octree_scale = 1.5
+chunk_scene = ExtResource("1_0cm30")
+sdf = ExtResource("1_kdhtt")
 transform = Transform3D(1, 0, 0.000401426, 0, 1, 0, -0.000401426, 0, 1, 0, 0, 0)
 
 [node name="Camera3D" type="Camera3D" parent="."]
 script = ExtResource("2_kdd2p")
 move_speed = 64.0
+
+[node name="TerrainEditor" type="Node3D" parent="Camera3D" node_paths=PackedStringArray("terrain")]
+script = ExtResource("3_8rpa4")
+terrain = NodePath("../../JarVoxelTerrain")
+sdf = SubResource("JarSphereSdf_0ru4y")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_tn4qg")

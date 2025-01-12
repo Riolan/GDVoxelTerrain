@@ -34,13 +34,15 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain *terrain)
 
         for (auto &edge : MeshChunk::Edges)
         {
-            auto na = _meshChunk.nodes[neighbours[edge.x]];
-            auto nb = _meshChunk.nodes[neighbours[edge.y]];
-            if (na == nb)
+            auto ai = neighbours[edge.x];
+            auto bi = neighbours[edge.y];
+            if (ai == bi)
             {
                 duplicates++;
                 continue;
             }
+            auto na = _meshChunk.nodes[ai];
+            auto nb = _meshChunk.nodes[bi];
 
             float valueA = na->get_value();
             float valueB = nb->get_value();
@@ -90,11 +92,12 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain *terrain)
 
         if (duplicates > 0)
         {
-            glm::vec3 planeNormal =
-                FitPlane::fit(std::vector<glm::vec3>(_tempPoints, _tempPoints + edge_crossings)); //, vertexPosition);
-            if (!glm::dot(planeNormal, normal) < 0)
-                planeNormal = -planeNormal;
-            normal = planeNormal;
+            // glm::vec3 planeNormal =
+            //     FitPlane::fit(std::vector<glm::vec3>(_tempPoints, _tempPoints + edge_crossings)); //, vertexPosition);
+            // if (glm::dot(planeNormal, normal) < 0)
+            //     planeNormal = -planeNormal;
+            // normal = planeNormal;
+            normal = glm::vec3(0,1,0);
         }
         vertexPosition -= _chunk->_center;
         _meshChunk.vertexIndices[node_id] = (_verts.size());

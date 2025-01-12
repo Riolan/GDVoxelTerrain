@@ -32,7 +32,7 @@ class JarSphereSdf : public JarSignedDistanceField
         return _radius;
     }
 
-    virtual float distance(const glm::vec3 &pos) override
+    virtual float distance(const glm::vec3 &pos) const override
     {
         return glm::length(pos - _center) - _radius;
     }

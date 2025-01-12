@@ -14,6 +14,9 @@ VoxelOctreeNode::VoxelOctreeNode(VoxelOctreeNode *parent, const glm::vec3 center
     if (_parent != nullptr)
     {
         LoD = _parent->LoD;
+        _value = _parent->_value;
+        _isModified = _parent->_isModified;
+        NodeColor = _parent->NodeColor;
     }
 }
 
@@ -170,21 +173,32 @@ void VoxelOctreeNode::modify(float newValue)
     set_value(newValue);
     _isSet = true;
     _isModified = true;
-    if (std::abs(v - newValue) > 0.1f)
-    {
-        NodeColor.r = 1.0f;
-    }
+    // if (std::abs(v - newValue) > 0.1f)
+    // {
+    //     NodeColor.r = 1.0f;
+    // }
 }
 
-void VoxelOctreeNode::modify_density_in_bounds(JarVoxelTerrain *terrain, ModifySettings &settings)
+void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain *terrain, const ModifySettings &settings)
 {
-    auto bounds = get_bounds(terrain->_octreeScale);
-    if (!settings.bounds->intersects(bounds))
+    if (settings.sdf.is_null())
+    {
+        UtilityFunctions::print("sdf invalid");
         return;
-    float newValue = settings.operation->apply(get_value(), settings.sdf->distance(_center));
+    }
+
+    auto bounds = get_bounds(terrain->_octreeScale);
+    if (!settings.bounds.intersects(bounds))
+        return;
+
+    float newValue = SDF::apply_operation(settings.operation, get_value(),
+                                          settings.sdf->distance(_center - settings.position), terrain->_octreeScale);
+    bool hasSurface = has_surface(terrain, newValue);
 
     if (!_isSet)
         build(terrain, true);
+
+    
 
     if (!is_leaf() || _size > 0 && has_surface(terrain, newValue))
     {
@@ -192,10 +206,14 @@ void VoxelOctreeNode::modify_density_in_bounds(JarVoxelTerrain *terrain, ModifyS
             subdivide(terrain->_octreeScale);
         _isSet = true;
         _isModified = true;
-        std::for_each(std::execution::par, _children->begin(), _children->end(),
-                      [&](auto &child) { child->modify_density_in_bounds(terrain, settings); });
+        if (is_chunk(terrain))
+            queue_update(terrain);
+        for (auto &child : *_children)
+        {
+            child->modify_sdf_in_bounds(terrain, settings);
+        }
     }
-    else if (settings.bounds->encloses(bounds))
+    else if (settings.bounds.encloses(bounds))
     {
         modify(newValue);
         prune_children();
@@ -244,7 +262,8 @@ void VoxelOctreeNode::clear()
     _chunk = nullptr;
 }
 
-void VoxelOctreeNode::get_voxel_leaves_in_bounds(const JarVoxelTerrain *terrain, const Bounds &bounds, std::vector<VoxelOctreeNode *> &result)
+void VoxelOctreeNode::get_voxel_leaves_in_bounds(const JarVoxelTerrain *terrain, const Bounds &bounds,
+                                                 std::vector<VoxelOctreeNode *> &result)
 {
     if (!get_bounds(terrain->_octreeScale).intersects(bounds))
         return;
@@ -265,7 +284,7 @@ void VoxelOctreeNode::get_voxel_leaves_in_bounds(const JarVoxelTerrain *terrain,
     }
 }
 
-VoxelOctreeNode *VoxelOctreeNode::create_child_node(const glm::vec3 &center, int size)
+inline VoxelOctreeNode *VoxelOctreeNode::create_child_node(const glm::vec3 &center, int size)
 {
     return new VoxelOctreeNode(this, center, size);
 }

@@ -51,8 +51,16 @@ void JarVoxelTerrain::_bind_methods()
     ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "sdf", PROPERTY_HINT_RESOURCE_TYPE, "JarSignedDistanceField"), "set_sdf",
                  "get_sdf");
 
-    ClassDB::bind_method(D_METHOD("sphere_edit_terrain", "position", "radius", "change"),
-                         &JarVoxelTerrain::sphere_edit_terrain);
+    BIND_ENUM_CONSTANT(SDF::SDF_OPERATION_UNION);
+    BIND_ENUM_CONSTANT(SDF::SDF_OPERATION_SUBTRACTION);
+    BIND_ENUM_CONSTANT(SDF::SDF_OPERATION_INTERSECTION);
+    BIND_ENUM_CONSTANT(SDF::SDF_OPERATION_SMOOTH_UNION);
+    BIND_ENUM_CONSTANT(SDF::SDF_OPERATION_SMOOTH_SUBTRACTION);
+    BIND_ENUM_CONSTANT(SDF::SDF_OPERATION_SMOOTH_INTERSECTION);
+    ClassDB::bind_method(D_METHOD("modify", "sdf", "operation", "position", "radius"), &JarVoxelTerrain::modify);
+    ClassDB::bind_method(D_METHOD("sphere_edit", "position", "radius", "union"), &JarVoxelTerrain::sphere_edit);
+    ClassDB::bind_method(D_METHOD("spawn_debug_spheres_in_bounds", "position", "range"),
+                         &JarVoxelTerrain::spawn_debug_spheres_in_bounds);
 }
 
 JarVoxelTerrain::JarVoxelTerrain()
@@ -60,6 +68,36 @@ JarVoxelTerrain::JarVoxelTerrain()
       _lodDistance(128.0f), _lodPadding(0.0f)
 {
     _chunkSize = (1 << _minChunkSize);
+}
+
+void JarVoxelTerrain::modify(const Ref<JarSignedDistanceField> sdf, const SDF::Operation operation,
+                             const Vector3 &position, const float radius)
+{
+    glm::vec3 pos = glm::vec3(position.x, position.y, position.z);
+    auto s = new JarSphereSdf();
+    s->set_radius(radius);
+
+    auto edge = glm::vec3(radius);
+    _modifySettingsQueue.push({s, Bounds(pos - edge, pos + edge), pos, operation});
+}
+
+void JarVoxelTerrain::sphere_edit(const Vector3 &position, const float radius, bool operation_union)
+{
+    glm::vec3 pos = glm::vec3(position.x, position.y, position.z);
+    auto operation =
+        operation_union ? SDF::Operation::SDF_OPERATION_SMOOTH_UNION :
+        SDF::Operation::SDF_OPERATION_SMOOTH_SUBTRACTION;
+    Ref<JarSphereSdf> sdf;
+    sdf.instantiate();
+    sdf->set_radius(radius);
+    auto edge = glm::vec3(radius + _octreeScale * 2.0f);
+
+    if (_isBuilding)
+        return;
+    ModifySettings settings = {sdf, Bounds(pos - edge, pos + edge), pos, operation};
+    _voxelRoot->modify_sdf_in_bounds(this, settings);
+    //_populationRoot->remove_population(settings);
+    //_modifySettingsQueue.push({sdf, Bounds(pos - edge, pos + edge), pos, operation});
 }
 
 bool JarVoxelTerrain::is_building() const
@@ -220,11 +258,8 @@ void JarVoxelTerrain::initialize()
     UtilityFunctions::print("Start");
     _chunkSize = (1 << _minChunkSize);
 
-    // PopulationLoDScale = _lod_distance / _feature_lod_distance * _octree_scale;
-    //_sdf = new SphereSdf({0, -1024, 0}, 1024);// new PlaneSdf({0, 1, 0}, 0);
     _levelOfDetail =
         new VoxelLoD(_updateLoDAutomatically, _automaticUpdateDistance, _lodDistance, _lodCount, _lodPadding, this);
-    //_levelOfDetail->UpdatePositionEvent.bind(this, &JarVoxelTerrain::build);
     _meshComputeScheduler = new MeshComputeScheduler(12);
 
     _voxelRoot = new VoxelOctreeNode(_size);
@@ -236,10 +271,10 @@ void JarVoxelTerrain::process()
 {
     _meshComputeScheduler->process(this);
 
-    // if (!_modifySettingsQueue.empty())
-    // {
-    //     process_modify_queue();
-    // }
+    if (!_modifySettingsQueue.empty())
+    {
+        process_modify_queue();
+    }
 
     // process_chunk_queue(static_cast<float>(delta));
 }
@@ -270,12 +305,12 @@ void JarVoxelTerrain::build()
     _isBuilding = false;
 
     // std::thread([this]() { _worldBiomes->update_texture(_levelOfDetail->get_camera_position()); }).detach();
-    UtilityFunctions::print("Done Building.");
-    UtilityFunctions::print(_voxelRoot->get_count());
+    // UtilityFunctions::print("Done Building.");
+    // UtilityFunctions::print(_voxelRoot->get_count());
 
-    std::vector<int> uniqueLoDValues;
-    _voxelRoot->populateUniqueLoDValues(uniqueLoDValues);
-    printUniqueLoDValues(uniqueLoDValues);
+    // std::vector<int> uniqueLoDValues;
+    // _voxelRoot->populateUniqueLoDValues(uniqueLoDValues);
+    // printUniqueLoDValues(uniqueLoDValues);
 }
 
 void JarVoxelTerrain::process_chunk_queue(float delta)
@@ -313,33 +348,56 @@ void JarVoxelTerrain::generate_epsilons()
     }
 }
 
-// void JarVoxelTerrain::process_modify_queue()
-// {
-//     if (_isBuilding)
-//         return;
-//     _isBuilding = true;
-//     std::thread([this]() {
-//         if (!_modifySettingsQueue.empty())
-//         {
-//             auto &settings = _modifySettingsQueue.front();
-//             _modifySettingsQueue.pop();
-//             _voxelRoot->modify_density_in_bounds(*this, settings);
-//             //_populationRoot->remove_population(settings);
-//         }
-//         _isBuilding = false;
-//     }).detach();
-// }
-
-void JarVoxelTerrain::sphere_edit_terrain(const Vector3 &position, float radius, float change)
+void JarVoxelTerrain::process_modify_queue()
 {
-    glm::vec3 pos = glm::vec3(position.x, position.y, position.z);
-    Vector3 rad = Vector3(1.0f, 1.0f, 1.0f) * radius;
-    // _modifySettingsQueue.push(
-    //     ModifySettings{new SphereSdf(pos, radius), *(Bounds(pos - rad, rad * 2.0f).grow(_octreeScale * 2)),
-    //                    change > 0 ? new SmoothUnionOperation : new SmoothSubtractionOperation});
+    if (_isBuilding)
+        return;
+    _isBuilding = true;
+    std::thread([this]() {
+        if (!_modifySettingsQueue.empty())
+        {
+            auto &settings = _modifySettingsQueue.front();
+            _modifySettingsQueue.pop();
+            _voxelRoot->modify_sdf_in_bounds(this, settings);
+            //_populationRoot->remove_population(settings);
+        }
+        _isBuilding = false;
+    }).detach();
 }
 
 void JarVoxelTerrain::get_voxel_leaves_in_bounds(const Bounds &bounds, std::vector<VoxelOctreeNode *> &nodes) const
 {
     _voxelRoot->get_voxel_leaves_in_bounds(this, bounds, nodes);
+}
+
+void JarVoxelTerrain::spawn_debug_spheres_in_bounds(const Vector3 &position, const float range)
+{
+    std::vector<VoxelOctreeNode *> nodes;
+    auto center = glm::vec3(position.x, position.y, position.z);
+    auto bounds = Bounds(center - range, center + range);
+    get_voxel_leaves_in_bounds(bounds, nodes);
+
+    Ref<StandardMaterial3D> red_material;
+    red_material.instantiate();
+    red_material->set_albedo(Color(1, 0, 0));
+    Ref<StandardMaterial3D> green_material;
+    green_material.instantiate();
+    green_material->set_albedo(Color(0, 1, 0));
+
+    Ref<SphereMesh> sphere_mesh;
+    sphere_mesh.instantiate();
+    sphere_mesh->set_radius(0.1f);
+    sphere_mesh->set_height(0.2f);
+
+    for (auto &&n : nodes)
+    {
+        Vector3 nodeCenter(n->_center.x, n->_center.y, n->_center.z);
+
+        MeshInstance3D *sphereInstance = memnew(MeshInstance3D);
+        add_child(sphereInstance);
+
+        sphereInstance->set_mesh(sphere_mesh);
+        sphereInstance->set_position(nodeCenter);
+        sphereInstance->set_material_override((n->_value > 0) ? green_material : red_material);
+    }
 }

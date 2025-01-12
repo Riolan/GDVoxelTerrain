@@ -37,6 +37,7 @@ public:
     inline bool is_not_edge_chunk(const JarVoxelTerrain* terrain) const;
 
     void populateUniqueLoDValues(std::vector<int>& lodValues) const;
+    void build(JarVoxelTerrain* terrain, int chunkLoD, bool ignoreLoD);
 public:
     VoxelOctreeNode(int size);
     VoxelOctreeNode(VoxelOctreeNode* parent, const glm::vec3 center, int size);
@@ -44,12 +45,12 @@ public:
     int priority() const;
 
     void build(JarVoxelTerrain* terrain, bool ignoreLoD = false);
-    void build(JarVoxelTerrain* terrain, int chunkLoD, bool ignoreLoD);
+    
     bool set_terrain_sdf(const JarVoxelTerrain* terrain); 
-    bool has_surface(const JarVoxelTerrain *terrain, float value);
+    inline bool has_surface(const JarVoxelTerrain *terrain, float value);
     void modify(float newValue);
     void queue_update(JarVoxelTerrain* terrain);
-    void modify_density_in_bounds(JarVoxelTerrain* terrain, ModifySettings& settings);
+    void modify_sdf_in_bounds(JarVoxelTerrain* terrain, const ModifySettings& settings);
     void update_chunk(JarVoxelTerrain* terrain, const ChunkMeshData* chunkMeshData);
     
     void clear();

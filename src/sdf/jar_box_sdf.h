@@ -32,7 +32,7 @@ class JarBoxSdf : public JarSignedDistanceField
         return Vector3(_extent.x, _extent.y, _extent.z);
     }
 
-    virtual float distance(const glm::vec3 &pos) override
+    virtual float distance(const glm::vec3 &pos) const override
     {
         glm::vec3 q = glm::abs(pos - _center) - _extent;
         return glm::length(glm::max(q, 0.0f)) + glm::min(glm::max(q.x, glm::max(q.y, q.z)), 0.0f);

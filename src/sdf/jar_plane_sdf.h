@@ -18,7 +18,7 @@ public:
     float get_d() const { return _d; }
 
 
-    virtual float distance(const glm::vec3 &pos) override {
+    virtual float distance(const glm::vec3 &pos) const override {
         return glm::dot(_normal, pos) + _d;
     }
 protected:

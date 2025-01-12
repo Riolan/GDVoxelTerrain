@@ -11,6 +11,9 @@
 #include <godot_cpp/classes/mesh.hpp>
 #include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/classes/packed_scene.hpp>
+#include <godot_cpp/classes/mesh_instance3d.hpp>
+#include <godot_cpp/classes/sphere_mesh.hpp>
+#include <godot_cpp/classes/standard_material3d.hpp>
 #include <godot_cpp/classes/random_number_generator.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <queue>
@@ -31,7 +34,7 @@ class JarVoxelTerrain : public Node3D
     Ref<JarSignedDistanceField> _sdf;
     VoxelOctreeNode *_voxelRoot;
 
-    std::queue<ModifySettings *> _modifySettingsQueue;
+    std::queue<ModifySettings> _modifySettingsQueue;
 
     // Exported variables
     float _octreeScale = 1.0f;
@@ -63,6 +66,10 @@ class JarVoxelTerrain : public Node3D
   public:
     JarVoxelTerrain();
 
+    //enum
+    void modify(const Ref<JarSignedDistanceField> sdf, const SDF::Operation operation, const Vector3 &position, const float radius);
+    void sphere_edit(const Vector3 &position, const float radius, bool operation_union);
+
     // properties
     bool is_building() const;
     VoxelLoD *get_lod() const;
@@ -84,9 +91,6 @@ class JarVoxelTerrain : public Node3D
 
     int get_chunk_size() const;
 
-    Ref<FastNoiseLite> get_noise_lite() const;
-    void set_noise_lite(const Ref<FastNoiseLite> &value);
-
     bool get_update_lod_automatically() const;
     void set_update_lod_automatically(bool value);
 
@@ -107,9 +111,13 @@ class JarVoxelTerrain : public Node3D
 
     Ref<PackedScene> get_chunk_scene() const;
     void set_chunk_scene(const Ref<PackedScene> &value);
-
-    void sphere_edit_terrain(const Vector3 &position, float radius, float change);
+    
     void get_voxel_leaves_in_bounds(const Bounds &bounds, std::vector<VoxelOctreeNode *> &nodes) const;
+
+    void spawn_debug_spheres_in_bounds(const Vector3 &position, const float range);
 };
+
+
+VARIANT_ENUM_CAST(SDF::Operation);
 
 #endif // VOXEL_TERRAIN_H
