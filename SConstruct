@@ -24,6 +24,9 @@ env.Append(CPPPATH=[
 sources = Glob("src/*.cpp") + Glob("src/utility/*.cpp") + Glob("src/sdf/*.cpp") + \
       Glob("src/voxel_terrain/*.cpp") + Glob("src/voxel_terrain/meshing/*.cpp") + Glob("src/voxel_terrain/meshing/surface_nets/*.cpp")
 
+# Set build output directories
+env.VariantDir('build', 'src', duplicate=0)
+
 # idk something about exceptions or something
 env.Append(CCFLAGS=["/EHsc"])#, "/Zi", "/Od", "/FS"]) 
 
@@ -33,23 +36,23 @@ if env["platform"] == "macos":
         "project/addons/jar_voxel_terrain/bin/jar_voxel_terrain.{}.{}.framework/jar_voxel_terrain.{}.{}".format(
             env["platform"], env["target"], env["platform"], env["target"]
         ),
-        source=sources,
+        source='build/*.cpp',
     )
 elif env["platform"] == "ios":
     if env["ios_simulator"]:
         library = env.StaticLibrary(
             "project/addons/jar_voxel_terrain/bin/jar_voxel_terrain.{}.{}.simulator.a".format(env["platform"], env["target"]),
-            source=sources,
+            source='build/*.cpp',
         )
     else:
         library = env.StaticLibrary(
             "project/addons/jar_voxel_terrain/bin/jar_voxel_terrain.{}.{}.a".format(env["platform"], env["target"]),
-            source=sources,
+            source='build/*.cpp',
         )
 else:
     library = env.SharedLibrary(
         "project/addons/jar_voxel_terrain/bin/jar_voxel_terrain{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
-        source=sources,
+        source='build/*.cpp',
     )
 
 Default(library)

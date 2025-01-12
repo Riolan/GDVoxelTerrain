@@ -53,7 +53,7 @@ public:
     void modify_sdf_in_bounds(JarVoxelTerrain* terrain, const ModifySettings& settings);
     void update_chunk(JarVoxelTerrain* terrain, const ChunkMeshData* chunkMeshData);
     
-    void clear();
+    void delete_chunk();
     void get_voxel_leaves_in_bounds(const JarVoxelTerrain *terrain, const Bounds& Bounds, std::vector<VoxelOctreeNode*>& result);
 
 protected:

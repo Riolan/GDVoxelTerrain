@@ -127,7 +127,7 @@ bool MeshChunk::should_have_quad(const glm::ivec3 &position, const int face) con
     }
 }
 
-int MeshChunk::get_node_index_at(const glm::ivec3 &pos) const
+inline int MeshChunk::get_node_index_at(const glm::ivec3 &pos) const
 {
     if (pos.x < 0 || pos.x >= _chunkResolution || pos.y < 0 || pos.y >= _chunkResolution || pos.z < 0 ||
         pos.z >= _chunkResolution)

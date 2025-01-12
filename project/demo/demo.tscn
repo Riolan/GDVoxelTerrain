@@ -1,10 +1,17 @@
-[gd_scene load_steps=11 format=3 uid="uid://dopxpjgtfffh4"]
+[gd_scene load_steps=12 format=3 uid="uid://dopxpjgtfffh4"]
 
 [ext_resource type="PackedScene" uid="uid://c7kqgl1k10x14" path="res://addons/jar_voxel_terrain/src/chunk.tscn" id="1_0cm30"]
 [ext_resource type="JarTerrainSdf" uid="uid://3jlwgf5biu2x" path="res://demo/terrain_sdf.tres" id="1_kdhtt"]
 [ext_resource type="Script" path="res://demo/movable_camera.gd" id="2_kdd2p"]
 [ext_resource type="Script" path="res://demo/terrain_editor.gd" id="3_8rpa4"]
 [ext_resource type="PackedScene" uid="uid://dssyh6xc7ljec" path="res://demo/ball.tscn" id="3_hls1k"]
+
+[sub_resource type="JarVoxelLoD" id="JarVoxelLoD_elodc"]
+automatic_update_distance = 64.0
+min_lod_distance = 128.0
+lod_level_count = 8
+automatic_update = true
+resource_local_to_scene = true
 
 [sub_resource type="JarSphereSdf" id="JarSphereSdf_0ru4y"]
 radius = 10.0
@@ -22,8 +29,9 @@ sky = SubResource("Sky_vgllt")
 
 [node name="Demo" type="Node3D"]
 
-[node name="JarVoxelTerrain" type="JarVoxelTerrain" parent="."]
-octree_scale = 1.5
+[node name="JarVoxelTerrain" type="JarVoxelTerrain" parent="." node_paths=PackedStringArray("player_node")]
+player_node = NodePath("../Camera3D")
+lod = SubResource("JarVoxelLoD_elodc")
 chunk_scene = ExtResource("1_0cm30")
 sdf = ExtResource("1_kdhtt")
 transform = Transform3D(1, 0, 0.000401426, 0, 1, 0, -0.000401426, 0, 1, 0, 0, 0)

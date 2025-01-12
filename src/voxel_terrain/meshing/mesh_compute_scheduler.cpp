@@ -51,7 +51,7 @@ void MeshComputeScheduler::process_queue(JarVoxelTerrain *terrain)
 
 void MeshComputeScheduler::run_task(const JarVoxelTerrain *terrain, ScheduledChunk &chunk)
 {
-    //std::thread([this, terrain, chunk]() {
+    std::thread([this, terrain, chunk]() {
 
     int triCount = 0;
 
@@ -68,7 +68,7 @@ void MeshComputeScheduler::run_task(const JarVoxelTerrain *terrain, ScheduledChu
     }
     _activeTasks--;
 
-    //}).detach();
+    }).detach();
 }
 
 void MeshComputeScheduler::clear_queue()

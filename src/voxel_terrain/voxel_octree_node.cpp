@@ -118,7 +118,7 @@ void VoxelOctreeNode::build(JarVoxelTerrain *terrain, int chunkLoD, bool ignoreL
 
     if (!is_chunk(terrain))
     {
-        clear();
+        delete_chunk();
     }
 
     if (LoD < 0 && !ignoreLoD)
@@ -193,12 +193,8 @@ void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain *terrain, const Modif
 
     float newValue = SDF::apply_operation(settings.operation, get_value(),
                                           settings.sdf->distance(_center - settings.position), terrain->_octreeScale);
-    bool hasSurface = has_surface(terrain, newValue);
-
     if (!_isSet)
-        build(terrain, true);
-
-    
+        build(terrain, true);    
 
     if (!is_leaf() || _size > 0 && has_surface(terrain, newValue))
     {
@@ -206,8 +202,6 @@ void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain *terrain, const Modif
             subdivide(terrain->_octreeScale);
         _isSet = true;
         _isModified = true;
-        if (is_chunk(terrain))
-            queue_update(terrain);
         for (auto &child : *_children)
         {
             child->modify_sdf_in_bounds(terrain, settings);
@@ -217,13 +211,13 @@ void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain *terrain, const Modif
     {
         modify(newValue);
         prune_children();
-        clear();
+        delete_chunk();
     }
 
     if (is_chunk(terrain))
         queue_update(terrain);
     else if (_chunk != nullptr)
-        clear();
+        delete_chunk();
 }
 
 void VoxelOctreeNode::update_chunk(JarVoxelTerrain *terrain, const ChunkMeshData *chunkMeshData)
@@ -231,7 +225,7 @@ void VoxelOctreeNode::update_chunk(JarVoxelTerrain *terrain, const ChunkMeshData
     _isEnqueued = false;
     if (chunkMeshData == nullptr || LoD < 0 || is_leaf())
     {
-        clear();
+        delete_chunk();
         return;
     }
 
@@ -252,7 +246,7 @@ void VoxelOctreeNode::queue_update(JarVoxelTerrain *terrain)
     terrain->get_mesh_scheduler()->enqueue(this);
 }
 
-void VoxelOctreeNode::clear()
+void VoxelOctreeNode::delete_chunk()
 {
     if (_chunk != nullptr)
     {

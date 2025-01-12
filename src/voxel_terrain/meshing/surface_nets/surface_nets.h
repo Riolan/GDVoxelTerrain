@@ -4,7 +4,7 @@
 #include "chunk_mesh_data.h"
 #include "mesh_chunk.h"
 #include "mesh_compute_scheduler.h"
-#include "voxel_lod.h"
+#include "jar_voxel_lod.h"
 #include "voxel_octree_node.h"
 #include <glm/glm.hpp>
 #include <godot_cpp/variant/color.hpp>
