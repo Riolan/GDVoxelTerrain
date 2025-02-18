@@ -10,6 +10,7 @@ var rotating : bool = false
 func _ready() -> void:
 	set_mouse(true);
 	#get_viewport().debug_draw = Viewport.DEBUG_DRAW_WIREFRAME; 
+	#get_viewport().debug_draw = Viewport.DEBUG_DRAW_OVERDRAW; 
 
 func _process(delta : float) -> void:
 	var _wish_dir_raw = Input.get_vector("move_left", "move_right", "move_forward", "move_backward");

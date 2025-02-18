@@ -30,7 +30,7 @@ class SurfaceNets
     PackedVector3Array _normals;
     PackedColorArray _colors;
     PackedInt32Array _indices;
-    // std::vector<bool> _badNormals;
+    std::vector<bool> _badNormals;
 
     const VoxelOctreeNode *_chunk;
     MeshChunk _meshChunk;

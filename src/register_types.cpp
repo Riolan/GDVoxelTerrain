@@ -5,6 +5,7 @@
 #include "jar_sphere_sdf.h"
 #include "jar_plane_sdf.h"
 #include "jar_terrain_sdf.h"
+#include "jar_planet_sdf.h"
 using namespace godot;
 
 void initialize_jar_voxel_terrain_module(ModuleInitializationLevel p_level)
@@ -17,6 +18,7 @@ void initialize_jar_voxel_terrain_module(ModuleInitializationLevel p_level)
         GDREGISTER_CLASS(JarSphereSdf);
         GDREGISTER_CLASS(JarPlaneSdf);
         GDREGISTER_CLASS(JarTerrainSdf);
+        GDREGISTER_CLASS(JarPlanetSdf);
 
 
         //TERRAIN

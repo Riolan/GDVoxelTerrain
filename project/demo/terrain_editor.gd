@@ -11,11 +11,11 @@ func _physics_process(delta: float) -> void:
 		_edit(true)
 		
 	edit_timer -= delta
-		
+					   
 func _edit(union : bool):
 	if(edit_timer > 0):
 		return;
-	edit_timer = 0.01
+	edit_timer = 0.05
 	var origin = global_position;
 	var direction = -global_transform.basis.z;
 	var space_state = get_world_3d().direct_space_state

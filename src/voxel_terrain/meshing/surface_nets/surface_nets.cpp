@@ -31,7 +31,7 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain &terrain)
 
         if (!_meshChunk.get_neighbours(_meshChunk.positions[node_id], neighbours))
             continue;
-
+         
         glm::vec3 vertexPosition(0.0f);
         Color color = Color(0, 0, 0, 0);
         glm::vec3 normal(0.0f);
@@ -55,7 +55,7 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain &terrain)
             // glm::vec3 nPosA = _meshChunk.Offsets[edge.x];
             // glm::vec3 nPosB = _meshChunk.Offsets[edge.y];
 
-            normal += (valueB - valueA) * glm::normalize(posB - posA);
+            normal += (valueB - valueA) * (posB - posA);
             // normal += (valueB - valueA) * (nPosB - nPosA);
 
             if (glm::sign(valueA) == glm::sign(valueB))
@@ -76,14 +76,6 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain &terrain)
             // UtilityFunctions::print("No crossings!");
             continue;
         }
-        // {//normal
-        //     normal = glm::vec3(0);
-        //     auto n0 = _meshChunk.nodes[neighbours[0]], n1 =_meshChunk.nodes[neighbours[1]], n2 =_meshChunk.nodes[neighbours[2]], n3 =_meshChunk.nodes[neighbours[4]];
-        //     normal += (n1->get_value() - n0->get_value()) * glm::normalize(n1->_center - n0->_center);  
-        //     normal += (n2->get_value() - n0->get_value()) * glm::normalize(n2->_center - n0->_center);  
-        //     normal += (n3->get_value() - n0->get_value()) * glm::normalize(n3->_center - n0->_center);  
-        //     normal *= -glm::vec3(_meshChunk.Octant);
-        // }      
            
 
         _meshChunk.faceDirs[node_id] =
@@ -107,26 +99,13 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain &terrain)
         // if (SquareVoxels)
         // vertexPosition = _meshChunk.nodes[node_id]->_center;
 
-        if (duplicates > 0) // use a plane fitting algorithm for edge cases
+         //if we have duplicate nodes (on lod boundaries), normals cannot be accurately computed. instead, average the neighbour normals for a good approximation. 
+        bool badNormal = duplicates > 0;
+        _badNormals.push_back(badNormal);
+
+        if (badNormal)
         {
-            // glm::vec3 planeNormal = FitPlane::fitPlaneNormal(
-            //     std::vector<glm::vec3>(_tempPoints, _tempPoints + edge_crossings)); //, vertexPosition);
-            // if (glm::dot(planeNormal, normal) < 0)
-            //     planeNormal = -planeNormal;
-            // normal = planeNormal;
-
-        //     auto n2 = glm::vec3(0);
-        //     using namespace std;
-        //     sort( neighbours.begin(), neighbours.end() );
-        //     neighbours.erase( unique( neighbours.begin(), neighbours.end() ), neighbours.end() );
-        //     for (size_t i = 0; i < neighbours.size(); i++)
-        //     {
-        //         auto n = _meshChunk.nodes[neighbours[i]];
-        //         n2 += glm::sign(n->_value) * glm::normalize(n->_center - vertexPosition);
-        //     }
-
-        //     if (glm::dot(n2, normal) < 0)
-        //         normal = -normal;
+            normal = glm::vec3(0,0,0);
         }
 
         vertexPosition -= _chunk->_center;
@@ -149,11 +128,12 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain &terrain)
 
         const int faces = 3;
         auto pos = _meshChunk.positions[node_id];
+        auto isSmall = _meshChunk.isSmalls[node_id];
         auto faceDirs = _meshChunk.faceDirs[node_id];
         for (int i = 0; i < faces; i++)
         {
             int flipFace = ((faceDirs >> (2 * i)) & 3) - 1;
-            if (flipFace == 0 || !_meshChunk.should_have_quad(pos, i))
+            if (flipFace == 0 || !_meshChunk.should_have_quad(pos, i, isSmall))
                 continue;
 
             auto neighbours = std::vector<int>();
@@ -214,6 +194,26 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain &terrain)
 
 inline void SurfaceNets::add_tri(int n0, int n1, int n2, bool flip)
 {
+    // if (_meshChunk.is_edge_chunk()) {
+        // For each vertex in the triangle, only accumulate from good neighbors
+    auto safe_accumulate = [&](int target, int a, int b) {
+        if (_badNormals[target]) {  
+            // Only use neighbor if it's not marked bad
+            if (!_badNormals[a]) {
+                _normals[target] += _normals[a];
+            }
+            if (!_badNormals[b]) {
+                _normals[target] += _normals[b];
+            }
+        }
+    };
+
+    if(_meshChunk.is_edge_chunk() && _badNormals[n0] && _badNormals[n1] && _badNormals[n2]) return;
+
+    safe_accumulate(n0, n1, n2);
+    safe_accumulate(n1, n0, n2);
+    safe_accumulate(n2, n0, n1);
+
     if (!flip)
     {
         _indices.push_back(n0);

@@ -140,7 +140,8 @@ void JarVoxelChunk::update_chunk(const ChunkMeshData &chunk_mesh_data)
     edge_chunk = chunk_mesh_data.edge_chunk;
     auto old_bounds = bounds;
     bounds = chunk_mesh_data.bounds;
-    auto position = bounds.get_center();// * 1.1f;
+    auto position = bounds.get_center();
+    // auto position = bounds.get_center() * 1.05f;
     set_position({position.x, position.y, position.z});
 
     array_mesh->clear_surfaces();

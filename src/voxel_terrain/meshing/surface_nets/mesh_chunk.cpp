@@ -31,7 +31,7 @@ MeshChunk::MeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chun
     float leafSize = ((1 << chunk.LoD) * terrain.get_octree_scale());
     Bounds bounds = chunk.get_bounds(terrain._octreeScale).expanded(leafSize - 0.001f);
 
-    //UtilityFunctions::print("Bounds: " + Utils::to_string(bounds));
+    // UtilityFunctions::print("Bounds: " + Utils::to_string(bounds));
 
     nodes.clear();
     terrain.get_voxel_leaves_in_bounds(bounds, nodes);
@@ -47,8 +47,8 @@ MeshChunk::MeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chun
     for (const VoxelOctreeNode *n : nodes)
     {
         int l = n->LoD;
-        if (l > chunkLoD)
-            IsEdgeChunk = true;
+        // if (l > chunkLoD)
+        //     IsEdgeChunk = true;
         if (l >= chunkLoD)
             continue;
 
@@ -71,10 +71,12 @@ MeshChunk::MeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chun
     vertexIndices.clear();
     faceDirs.clear();
     _leavesLut.clear();
+    isSmalls.clear();
     positions.resize(nodes.size(), glm::ivec3(0));
     vertexIndices.resize(nodes.size(), -2);
     faceDirs.resize(nodes.size(), 0);
     _leavesLut.resize(_chunkResolution * _chunkResolution * _chunkResolution, 0);
+    isSmalls.resize(nodes.size(), false);
 
     for (size_t i = 0; i < nodes.size(); i++)
     {
@@ -88,13 +90,26 @@ MeshChunk::MeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chun
         glm::vec3 min = (overlap.min - minPos) * normalizingFactor;
         glm::vec3 max = (overlap.max - minPos) * normalizingFactor;
         glm::ivec3 intMin = glm::clamp((glm::ivec3)glm::floor(min), glm::ivec3(0.0f), glm::ivec3(clampMax));
-        glm::ivec3 intMax = glm::clamp((glm::ivec3)glm::ceil(max) - glm::ivec3(1.0f), glm::ivec3(0.0f), glm::ivec3(clampMax));
+        glm::ivec3 intMax =
+            glm::clamp((glm::ivec3)glm::ceil(max) - glm::ivec3(1.0f), glm::ivec3(0.0f), glm::ivec3(clampMax));
 
-        positions[i] = (glm::ivec3(Octant.x == -1 ? intMin.x : intMax.x, Octant.y == -1 ? intMin.y : intMax.y,
-                                   Octant.z == -1 ? intMin.z : intMax.z));
+        glm::ivec3 pos = (glm::ivec3(Octant.x == -1 ? intMin.x : intMax.x, Octant.y == -1 ? intMin.y : intMax.y,
+                                     Octant.z == -1 ? intMin.z : intMax.z));
+        positions[i] = pos;
+
+        auto edge = [](int sign, int pos) {
+            return pos <= 0 || pos >= LargeChunkRes - 1;
+            // return sign > 0 ? pos > 1 : pos < LargeChunkRes - 1;
+        };
+
+        bool isSmall = intMax == intMin;
+        isSmalls[i] = isSmall;
+        if (IsEdgeChunk && isSmall && (edge(Octant.x, pos.x) || edge(Octant.y, pos.y) || edge(Octant.z, pos.z)))
+            continue;
+
         vertexIndices[i] = -1;
 
-        if (intMax == intMin)
+        if (isSmall)
         {
             _leavesLut[intMax.x + _chunkResolution * (intMax.y + _chunkResolution * intMax.z)] = i + 1;
         }
@@ -114,16 +129,23 @@ MeshChunk::MeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chun
     }
 }
 
-bool MeshChunk::should_have_quad(const glm::ivec3 &position, const int face) const
+bool MeshChunk::should_have_quad(const glm::ivec3 &position, const int face, const bool isSmall) const
 {
+    //this implementation isn't quite perfect. The primary goal is to prevent quads/tris parallel to chunk boundaries on chunk boundaries to generate in both chunks.
+    auto withinBounds = [this, isSmall](int sign, int pos) {
+        if (IsEdgeChunk && isSmall)
+            return pos > 2 && pos < _chunkResolution - 1;
+        else
+            return pos > 0;
+    };
     switch (face)
     {
     case 0:
-        return position.x > 0;// && position.x < _chunkResolution - 1;
+        return withinBounds(Octant.x, position.x);
     case 1:
-        return position.y > 0;// && position.y < _chunkResolution - 1;
+        return withinBounds(Octant.y, position.y);
     case 2:
-        return position.z > 0;// && position.z < _chunkResolution - 1;
+        return withinBounds(Octant.z, position.z);
     default:
         return true;
     }
@@ -138,9 +160,8 @@ inline int MeshChunk::get_node_index_at(const glm::ivec3 &pos) const
         return (_leavesLut[pos.x + _chunkResolution * (pos.y + _chunkResolution * pos.z)] - 1);
 }
 
-bool MeshChunk::get_unique_neighbouring_vertices(const glm::ivec3 &pos,
-                                                             const std::vector<glm::ivec3> &offsets, 
-                                                             std::vector<int> &result) const
+bool MeshChunk::get_unique_neighbouring_vertices(const glm::ivec3 &pos, const std::vector<glm::ivec3> &offsets,
+                                                 std::vector<int> &result) const
 {
     for (const auto &o : offsets)
     {
@@ -149,7 +170,7 @@ bool MeshChunk::get_unique_neighbouring_vertices(const glm::ivec3 &pos,
         {
             return false;
         }
-        if(std::find(result.begin(), result.end(), n) == result.end())
+        if (std::find(result.begin(), result.end(), n) == result.end())
             result.push_back(n);
     }
     return true;

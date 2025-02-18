@@ -19,7 +19,7 @@ class MeshChunk
     static const std::vector<glm::ivec3> XyOffsets;
     static const std::vector<std::vector<glm::ivec3>> FaceOffsets;
 
-    bool should_have_quad(const glm::ivec3 &position, int face) const;
+    bool should_have_quad(const glm::ivec3 &position, const int face, const bool isSmall) const;
     inline int get_node_index_at(const glm::ivec3 &pos) const;
     bool get_unique_neighbouring_vertices(const glm::ivec3 &pos, const std::vector<glm::ivec3> &offsets,
                                           std::vector<int> &result) const;
@@ -61,6 +61,7 @@ class MeshChunk
     std::vector<glm::ivec3> positions;
     std::vector<int> vertexIndices;
     std::vector<int> faceDirs;
+    std::vector<bool> isSmalls;
 
 private:
     glm::vec3 half_leaf_size;
