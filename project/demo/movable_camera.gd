@@ -3,7 +3,7 @@ extends Camera3D
 @export var move_speed : float = 8.0
 @export var look_sensitivity : float = 0.1
 const MIN_MOVE_SPEED = 0.5;
-const MAX_MOVE_SPEED = 512;
+const MAX_MOVE_SPEED = 4096;
 var rotating : bool = false
 	
 	

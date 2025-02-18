@@ -5,8 +5,8 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include "jar_voxel_terrain.h"
-SurfaceNets::SurfaceNets(const JarVoxelTerrain *terrain, const ScheduledChunk &chunk)
-    : _chunk(chunk.node), _meshChunk(MeshChunk(terrain, chunk.node))
+SurfaceNets::SurfaceNets(const JarVoxelTerrain &terrain, const ScheduledChunk &chunk)
+    : _chunk(&chunk.node), _meshChunk(MeshChunk(terrain, chunk.node))
 {
     int vertCount = _meshChunk.nodes.size();
     // _verts.reserve(vertCount);
@@ -15,9 +15,14 @@ SurfaceNets::SurfaceNets(const JarVoxelTerrain *terrain, const ScheduledChunk &c
     // _indices.reserve(vertCount * 6);
 }
 
-ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain *terrain)
+ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain &terrain)
 {
+    // if(_meshChunk.is_edge_chunk())
+    //      return nullptr;
+
     int flip = _meshChunk.Octant.x * _meshChunk.Octant.y * _meshChunk.Octant.z;
+    glm::vec3 half_leaf_size = _meshChunk.get_half_leaf_size() * glm::vec3(_meshChunk.Octant);
+    
     for (size_t node_id = 0; node_id < _meshChunk.nodes.size(); node_id++)
     {
         if (_meshChunk.vertexIndices[node_id] <= -2)
@@ -31,7 +36,6 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain *terrain)
         Color color = Color(0, 0, 0, 0);
         glm::vec3 normal(0.0f);
         int duplicates = 0, edge_crossings = 0;
-
         for (auto &edge : MeshChunk::Edges)
         {
             auto ai = neighbours[edge.x];
@@ -48,7 +52,11 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain *terrain)
             float valueB = nb->get_value();
             glm::vec3 posA = na->_center;
             glm::vec3 posB = nb->_center;
-            normal += (valueB - valueA) * (posB - posA);
+            // glm::vec3 nPosA = _meshChunk.Offsets[edge.x];
+            // glm::vec3 nPosB = _meshChunk.Offsets[edge.y];
+
+            normal += (valueB - valueA) * glm::normalize(posB - posA);
+            // normal += (valueB - valueA) * (nPosB - nPosA);
 
             if (glm::sign(valueA) == glm::sign(valueB))
                 continue;
@@ -68,6 +76,15 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain *terrain)
             // UtilityFunctions::print("No crossings!");
             continue;
         }
+        // {//normal
+        //     normal = glm::vec3(0);
+        //     auto n0 = _meshChunk.nodes[neighbours[0]], n1 =_meshChunk.nodes[neighbours[1]], n2 =_meshChunk.nodes[neighbours[2]], n3 =_meshChunk.nodes[neighbours[4]];
+        //     normal += (n1->get_value() - n0->get_value()) * glm::normalize(n1->_center - n0->_center);  
+        //     normal += (n2->get_value() - n0->get_value()) * glm::normalize(n2->_center - n0->_center);  
+        //     normal += (n3->get_value() - n0->get_value()) * glm::normalize(n3->_center - n0->_center);  
+        //     normal *= -glm::vec3(_meshChunk.Octant);
+        // }      
+           
 
         _meshChunk.faceDirs[node_id] =
             (static_cast<int>(flip * glm::sign(glm::sign(_meshChunk.nodes[neighbours[6]]->get_value()) -
@@ -88,17 +105,30 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain *terrain)
         normal = glm::normalize(normal);
 
         // if (SquareVoxels)
-        // vertexPosition = node->_center();
+        // vertexPosition = _meshChunk.nodes[node_id]->_center;
 
-        if (duplicates > 0)
+        if (duplicates > 0) // use a plane fitting algorithm for edge cases
         {
-            // glm::vec3 planeNormal =
-            //     FitPlane::fit(std::vector<glm::vec3>(_tempPoints, _tempPoints + edge_crossings)); //, vertexPosition);
+            // glm::vec3 planeNormal = FitPlane::fitPlaneNormal(
+            //     std::vector<glm::vec3>(_tempPoints, _tempPoints + edge_crossings)); //, vertexPosition);
             // if (glm::dot(planeNormal, normal) < 0)
             //     planeNormal = -planeNormal;
             // normal = planeNormal;
-            normal = glm::vec3(0,1,0);
+
+        //     auto n2 = glm::vec3(0);
+        //     using namespace std;
+        //     sort( neighbours.begin(), neighbours.end() );
+        //     neighbours.erase( unique( neighbours.begin(), neighbours.end() ), neighbours.end() );
+        //     for (size_t i = 0; i < neighbours.size(); i++)
+        //     {
+        //         auto n = _meshChunk.nodes[neighbours[i]];
+        //         n2 += glm::sign(n->_value) * glm::normalize(n->_center - vertexPosition);
+        //     }
+
+        //     if (glm::dot(n2, normal) < 0)
+        //         normal = -normal;
         }
+
         vertexPosition -= _chunk->_center;
         _meshChunk.vertexIndices[node_id] = (_verts.size());
         _verts.push_back({vertexPosition.x, vertexPosition.y, vertexPosition.z});
@@ -108,6 +138,7 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain *terrain)
 
     if (_verts.size() == 0)
     {
+        // UtilityFunctions::printerr("No vertices!");
         return nullptr;
     }
 
@@ -160,7 +191,13 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain *terrain)
 
     if (_indices.size() == 0)
     {
+        // UtilityFunctions::printerr("No indices!");
         return nullptr;
+    }
+
+    for (size_t vert_id = 0; vert_id < _normals.size(); vert_id++)
+    {
+        _normals[vert_id] = _normals[vert_id].normalized();
     }
 
     // Assign arrays to mesh data
@@ -171,8 +208,8 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain *terrain)
     meshData[Mesh::ARRAY_COLOR] = _colors;
     meshData[Mesh::ARRAY_INDEX] = _indices;
 
-    return new ChunkMeshData(meshData, _meshChunk.RealLoD, _meshChunk.IsEdgeChunk,
-                             _chunk->get_bounds(terrain->_octreeScale));
+    return new ChunkMeshData(meshData, _meshChunk.get_real_lod(), _meshChunk.is_edge_chunk(),
+                             _chunk->get_bounds(terrain._octreeScale));
 }
 
 inline void SurfaceNets::add_tri(int n0, int n1, int n2, bool flip)
@@ -190,23 +227,3 @@ inline void SurfaceNets::add_tri(int n0, int n1, int n2, bool flip)
         _indices.push_back(n2);
     }
 }
-
-// Create PackedVector3Array and copy data using memcpy
-// PackedVector3Array packedVerts;
-// packedVerts.resize(_verts.size());
-// std::memcpy(packedVerts.ptrw(), _verts.data(), _verts.size() * sizeof(Vector3));
-
-// // Create PackedVector3Array for normals
-// PackedVector3Array packedNormals;
-// packedNormals.resize(_normals.size());
-// std::memcpy(packedNormals.ptrw(), _normals.data(), _normals.size() * sizeof(Vector3));
-
-// // Create PackedColorArray and copy data using memcpy
-// PackedColorArray packedColors;
-// packedColors.resize(_colors.size());
-// std::memcpy(packedColors.ptrw(), _colors.data(), _colors.size() * sizeof(Color));
-
-// // Create PackedInt32Array and copy data using memcpy
-// PackedInt32Array packedIndices;
-// packedIndices.resize(_indices.size());
-// std::memcpy(packedIndices.ptrw(), _indices.data(), _indices.size() * sizeof(int));

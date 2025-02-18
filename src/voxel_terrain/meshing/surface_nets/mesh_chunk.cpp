@@ -21,26 +21,27 @@ const std::vector<glm::ivec3> MeshChunk::XyOffsets = {glm::ivec3(0, 0, 0), glm::
 
 const std::vector<std::vector<glm::ivec3>> MeshChunk::FaceOffsets = {YzOffsets, XzOffsets, XyOffsets};
 
-MeshChunk::MeshChunk(const JarVoxelTerrain *terrain, const VoxelOctreeNode *chunk)
+MeshChunk::MeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chunk)
 {
-    glm::vec3 chunkCenter = chunk->_center;
-    auto cameraPosition = terrain->get_lod()->get_camera_position();
+    glm::vec3 chunkCenter = chunk._center;
+    auto cameraPosition = terrain.get_lod()->get_camera_position();
     Octant = glm::ivec3(chunkCenter.x > cameraPosition.x ? 1 : -1, chunkCenter.y > cameraPosition.y ? 1 : -1,
                         chunkCenter.z > cameraPosition.z ? 1 : -1);
 
-    float leafSize = ((1 << chunk->LoD) * terrain->get_octree_scale());
-    Bounds bounds = chunk->get_bounds(terrain->_octreeScale).expanded(leafSize);
+    float leafSize = ((1 << chunk.LoD) * terrain.get_octree_scale());
+    Bounds bounds = chunk.get_bounds(terrain._octreeScale).expanded(leafSize - 0.001f);
 
     //UtilityFunctions::print("Bounds: " + Utils::to_string(bounds));
 
     nodes.clear();
-    terrain->get_voxel_leaves_in_bounds(bounds, nodes);
+    terrain.get_voxel_leaves_in_bounds(bounds, nodes);
+    bounds = bounds.expanded(0.001f);
 
     if (nodes.empty())
         return;
 
-    int chunkLoD = chunk->LoD;
-    RealLoD = chunk->LoD;
+    int chunkLoD = chunk.LoD;
+    RealLoD = chunk.LoD;
     _chunkResolution = ChunkRes;
 
     for (const VoxelOctreeNode *n : nodes)
@@ -51,8 +52,8 @@ MeshChunk::MeshChunk(const JarVoxelTerrain *terrain, const VoxelOctreeNode *chun
         if (l >= chunkLoD)
             continue;
 
-        chunkLoD = chunk->LoD - 1;
-        leafSize = ((1 << chunkLoD) * terrain->get_octree_scale());
+        chunkLoD = chunk.LoD - 1;
+        leafSize = ((1 << chunkLoD) * terrain.get_octree_scale());
         _chunkResolution = LargeChunkRes;
         IsEdgeChunk = true;
         break;
@@ -60,8 +61,9 @@ MeshChunk::MeshChunk(const JarVoxelTerrain *terrain, const VoxelOctreeNode *chun
 
     // UtilityFunctions::print("NodeCount: " + godot::String(std::to_string(nodes.size()).c_str()));
 
-    float maxChunkSize = (1 << chunkLoD) * 2 * terrain->get_octree_scale();
+    float maxChunkSize = (1 << chunkLoD + 1);
     float normalizingFactor = 1.0f / leafSize;
+    half_leaf_size = glm::vec3(leafSize * 0.5);
     glm::vec3 minPos = bounds.min;
     glm::ivec3 clampMax = glm::ivec3(_chunkResolution - 1);
 
@@ -69,15 +71,15 @@ MeshChunk::MeshChunk(const JarVoxelTerrain *terrain, const VoxelOctreeNode *chun
     vertexIndices.clear();
     faceDirs.clear();
     _leavesLut.clear();
-    _leavesLut.resize(_chunkResolution * _chunkResolution * _chunkResolution, 0);
     positions.resize(nodes.size(), glm::ivec3(0));
     vertexIndices.resize(nodes.size(), -2);
     faceDirs.resize(nodes.size(), 0);
+    _leavesLut.resize(_chunkResolution * _chunkResolution * _chunkResolution, 0);
 
     for (size_t i = 0; i < nodes.size(); i++)
     {
         VoxelOctreeNode *node = nodes[i];
-        Bounds b = node->get_bounds(terrain->_octreeScale);
+        Bounds b = node->get_bounds(terrain._octreeScale);
 
         if (node->LoD < 0 || node->_size > maxChunkSize || !b.intersects(bounds))
             continue;
@@ -117,11 +119,11 @@ bool MeshChunk::should_have_quad(const glm::ivec3 &position, const int face) con
     switch (face)
     {
     case 0:
-        return position.x > 0; // || Octant.x < 0 && position.x < _chunkResolution - 1;
+        return position.x > 0;// && position.x < _chunkResolution - 1;
     case 1:
-        return position.y > 0; // || Octant.y < 0 && position.y < _chunkResolution - 1;
+        return position.y > 0;// && position.y < _chunkResolution - 1;
     case 2:
-        return position.z > 0; // || Octant.z < 0 && position.z < _chunkResolution - 1;
+        return position.z > 0;// && position.z < _chunkResolution - 1;
     default:
         return true;
     }
@@ -140,7 +142,6 @@ bool MeshChunk::get_unique_neighbouring_vertices(const glm::ivec3 &pos,
                                                              const std::vector<glm::ivec3> &offsets, 
                                                              std::vector<int> &result) const
 {
-    //std::unordered_set<int> result;
     for (const auto &o : offsets)
     {
         auto n = get_node_index_at(pos + o * Octant);

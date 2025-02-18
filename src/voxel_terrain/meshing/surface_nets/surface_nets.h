@@ -20,7 +20,7 @@ class JarVoxelTerrain;
 class SurfaceNets
 {
   private:
-    static const bool SquareVoxels = false;
+    static const bool SquareVoxels = true;
 
     // std::vector<glm::vec3> _verts;
     // std::vector<glm::vec3> _normals;
@@ -30,6 +30,7 @@ class SurfaceNets
     PackedVector3Array _normals;
     PackedColorArray _colors;
     PackedInt32Array _indices;
+    // std::vector<bool> _badNormals;
 
     const VoxelOctreeNode *_chunk;
     MeshChunk _meshChunk;
@@ -38,9 +39,9 @@ class SurfaceNets
     inline void add_tri(int n0, int n1, int n2, bool flip);
 
   public:
-    SurfaceNets(const JarVoxelTerrain *terrain, const ScheduledChunk &chunk);
+    SurfaceNets(const JarVoxelTerrain &terrain, const ScheduledChunk &chunk);
 
-    ChunkMeshData *generate_mesh_data(const JarVoxelTerrain *terrain);
+    ChunkMeshData *generate_mesh_data(const JarVoxelTerrain &terrain);
 };
 
 #endif // SURFACE_NETS_H

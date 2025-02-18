@@ -12,19 +12,6 @@ class JarVoxelTerrain;
 class MeshChunk
 {
   public:
-    const static int ChunkRes = 16 + 2;
-    const static int LargeChunkRes = 2 * ChunkRes;
-    int _chunkResolution = ChunkRes;
-    std::vector<int> _leavesLut;
-    std::vector<glm::ivec3> positions;
-    std::vector<int> vertexIndices;
-    std::vector<int> faceDirs;
-    std::vector<VoxelOctreeNode *> nodes;
-
-    glm::ivec3 Octant{1, 1, 1};
-    bool IsEdgeChunk = false;
-    int RealLoD = 0;
-
     static const std::vector<glm::ivec3> Offsets;
     static const std::vector<glm::ivec2> Edges;
     static const std::vector<glm::ivec3> YzOffsets;
@@ -39,7 +26,7 @@ class MeshChunk
 
     bool get_neighbours(const glm::ivec3 &pos, std::vector<int> &result) const;
 
-    MeshChunk(const JarVoxelTerrain *terrain, const VoxelOctreeNode *chunk);
+    MeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chunk);
     int get_chunk_resolution() const
     {
         return _chunkResolution;
@@ -64,6 +51,25 @@ class MeshChunk
     {
         return faceDirs;
     }
+
+    glm::vec3 get_half_leaf_size() const {
+        return half_leaf_size;
+    }
+
+    glm::ivec3 Octant{1, 1, 1};
+    std::vector<VoxelOctreeNode *> nodes;
+    std::vector<glm::ivec3> positions;
+    std::vector<int> vertexIndices;
+    std::vector<int> faceDirs;
+
+private:
+    glm::vec3 half_leaf_size;
+    const static int ChunkRes = 16 + 2;
+    const static int LargeChunkRes = 2 * ChunkRes;
+    int _chunkResolution = ChunkRes;
+    std::vector<int> _leavesLut;
+    bool IsEdgeChunk = false;
+    int RealLoD = 0;
 };
 
 #endif // MESH_CHUNK_H

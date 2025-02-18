@@ -9,15 +9,15 @@ MeshComputeScheduler::MeshComputeScheduler(int maxConcurrentTasks)
 {
 }
 
-void MeshComputeScheduler::enqueue(VoxelOctreeNode *node)
+void MeshComputeScheduler::enqueue(VoxelOctreeNode &node)
 {
     ChunksToAdd.push(new ScheduledChunk(node));
 }
 
-void MeshComputeScheduler::process(JarVoxelTerrain *terrain)
+void MeshComputeScheduler::process(JarVoxelTerrain &terrain)
 {
     _prevTris = _totalTris;
-    if (!terrain->is_building())
+    if (!terrain.is_building())
     {
         process_queue(terrain);
     }
@@ -32,7 +32,7 @@ void MeshComputeScheduler::process(JarVoxelTerrain *terrain)
     }
 }
 
-void MeshComputeScheduler::process_queue(JarVoxelTerrain *terrain)
+void MeshComputeScheduler::process_queue(JarVoxelTerrain &terrain)
 {
     while (!ChunksToAdd.empty())
     {
@@ -49,30 +49,31 @@ void MeshComputeScheduler::process_queue(JarVoxelTerrain *terrain)
     }
 }
 
-void MeshComputeScheduler::run_task(const JarVoxelTerrain *terrain, ScheduledChunk &chunk)
+void MeshComputeScheduler::run_task(const JarVoxelTerrain &terrain, ScheduledChunk &chunk)
 {
-    std::thread([this, terrain, chunk]() {
+    std::thread([this, &terrain, &chunk]() {
+        int triCount = 0;
 
-    int triCount = 0;
+        auto meshCompute = SurfaceNets(terrain, chunk);
+        ChunkMeshData *chunkMeshData = meshCompute.generate_mesh_data(terrain);
+        ChunksToProcess.push(std::make_pair(&(chunk.node), chunkMeshData));
 
-    auto meshCompute = SurfaceNets(terrain, chunk);
-    ChunkMeshData *chunkMeshData = meshCompute.generate_mesh_data(terrain);
-
-    if (chunkMeshData != nullptr)
-    {
-        // if (JarVoxelTerrain::render_details())
+        // if (chunkMeshData != nullptr)
         // {
-        //     chunkMeshData->instantiate_details();
+        //     // if (JarVoxelTerrain::render_details())
+        //     // {
+        //     //     chunkMeshData->instantiate_details();
+        //     // }
+        //     ChunksToProcess.push(std::make_pair(&(chunk.node), chunkMeshData));
+        // } else {
+        //     UtilityFunctions::print("null mesh");
         // }
-        ChunksToProcess.push(std::make_pair(chunk.node, chunkMeshData));
-    }
-    _activeTasks--;
-
+        _activeTasks--;
     }).detach();
 }
 
 void MeshComputeScheduler::clear_queue()
 {
     ChunksToAdd.clear();
-    ChunksToProcess.clear();
+    // ChunksToProcess.clear();
 }

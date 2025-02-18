@@ -13,9 +13,9 @@ func _physics_process(delta: float) -> void:
 	edit_timer -= delta
 		
 func _edit(union : bool):
-	#if(edit_timer > 0):
-		#return;
-	edit_timer = 0.1
+	if(edit_timer > 0):
+		return;
+	edit_timer = 0.01
 	var origin = global_position;
 	var direction = -global_transform.basis.z;
 	var space_state = get_world_3d().direct_space_state
@@ -24,5 +24,5 @@ func _edit(union : bool):
 	if result:
 		#terrain.modify(sdf, )
 	#OPERATION
-		terrain.sphere_edit(result.position, 10, union)
-		#terrain.spawn_debug_spheres_in_bounds(result.position, 15)
+		terrain.sphere_edit(result.position, 15, union)
+		#terrain.spawn_debug_spheres_in_bounds(result.position, 16)

@@ -19,7 +19,6 @@ public:
     glm::vec4 NodeColor{0, 0, 0, 0};
 
     bool _isSet = false;
-    bool _isModified = false;
     bool _isDirty = false;
     bool _isEnqueued = false;
 
@@ -32,32 +31,36 @@ public:
     float get_value();
     void set_value(float value);
 
-    inline bool is_chunk(const JarVoxelTerrain* terrain) const;
-    inline bool is_one_above_chunk(const JarVoxelTerrain* terrain) const;
-    inline bool is_not_edge_chunk(const JarVoxelTerrain* terrain) const;
+    inline bool is_chunk(const JarVoxelTerrain &terrain) const;
+    inline bool is_one_above_chunk(const JarVoxelTerrain &terrain) const;
+    inline bool is_not_edge_chunk(const JarVoxelTerrain &terrain) const;
 
     void populateUniqueLoDValues(std::vector<int>& lodValues) const;
-    void build(JarVoxelTerrain* terrain, int chunkLoD, bool ignoreLoD);
+
+    bool is_enqueued() const;
+    bool is_parent_enqueued() const;    
+    bool is_any_children_enqueued() const;
+
+    inline bool should_delete_chunk(const JarVoxelTerrain &terrain) const;
 public:
     VoxelOctreeNode(int size);
     VoxelOctreeNode(VoxelOctreeNode* parent, const glm::vec3 center, int size);
 
     int priority() const;
 
-    void build(JarVoxelTerrain* terrain, bool ignoreLoD = false);
+    void build(JarVoxelTerrain &terrain, bool ignoreLoD = false);
     
-    bool set_terrain_sdf(const JarVoxelTerrain* terrain); 
-    inline bool has_surface(const JarVoxelTerrain *terrain, float value);
-    void modify(float newValue);
-    void queue_update(JarVoxelTerrain* terrain);
-    void modify_sdf_in_bounds(JarVoxelTerrain* terrain, const ModifySettings& settings);
-    void update_chunk(JarVoxelTerrain* terrain, const ChunkMeshData* chunkMeshData);
+    inline bool has_surface(const JarVoxelTerrain &terrain, const float value);
+    void queue_update(JarVoxelTerrain &terrain);
+    void modify_sdf_in_bounds(JarVoxelTerrain &terrain, const ModifySettings& settings);
+    void update_chunk(JarVoxelTerrain &terrain, const ChunkMeshData* chunkMeshData);
     
     void delete_chunk();
-    void get_voxel_leaves_in_bounds(const JarVoxelTerrain *terrain, const Bounds& Bounds, std::vector<VoxelOctreeNode*>& result);
+    void get_voxel_leaves_in_bounds(const JarVoxelTerrain &terrain, const Bounds& Bounds, std::vector<VoxelOctreeNode*>& result);
+
 
 protected:
-    inline virtual VoxelOctreeNode* create_child_node(const glm::vec3& center, int size) override;
+    inline virtual std::unique_ptr<VoxelOctreeNode> create_child_node(const glm::vec3& center, int size) override;
 };
 
 #endif // VOXEL_OCTREE_NODE_H

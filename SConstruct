@@ -24,8 +24,13 @@ env.Append(CPPPATH=[
 sources = Glob("src/*.cpp") + Glob("src/utility/*.cpp") + Glob("src/sdf/*.cpp") + \
       Glob("src/voxel_terrain/*.cpp") + Glob("src/voxel_terrain/meshing/*.cpp") + Glob("src/voxel_terrain/meshing/surface_nets/*.cpp")
 
-# idk something about exceptions or something
-env.Append(CCFLAGS=["/EHsc"])#, "/Zi", "/Od", "/FS"]) 
+#compiler flags
+if env['PLATFORM'] == 'windows':
+    if env['CXX'] == 'x86_64-w64-mingw32-g++':
+        env.Append(CXXFLAGS=['-std=c++11'])  # Example flags for MinGW
+    elif env['CXX'] == 'cl':
+        env.Append(CXXFLAGS=['/EHsc'])  # Apply /EHsc for MSVC
+
 
 # Handle different platforms
 if env["platform"] == "macos":

@@ -14,8 +14,8 @@ VoxelOctreeNode::VoxelOctreeNode(VoxelOctreeNode *parent, const glm::vec3 center
     if (_parent != nullptr)
     {
         LoD = _parent->LoD;
-        _value = _parent->_value;
-        _isModified = _parent->_isModified;
+        _value = _parent->get_value();
+        _isSet = _parent->_isSet;
         NodeColor = _parent->NodeColor;
     }
 }
@@ -55,7 +55,7 @@ float VoxelOctreeNode::get_value()
         _value *= 0.125f;
         // NodeColor *= 0.125f;
     }
-    set_dirty(false);
+    _isDirty = false;
     return _value;
 }
 
@@ -69,25 +69,25 @@ void VoxelOctreeNode::set_value(float value)
     }
 }
 
-inline bool VoxelOctreeNode::is_chunk(const JarVoxelTerrain *terrain) const
+inline bool VoxelOctreeNode::is_chunk(const JarVoxelTerrain &terrain) const
 {
-    return _size == (LoD + terrain->get_min_chunk_size());
+    return _size == (LoD + terrain.get_min_chunk_size());
 }
 
-inline bool VoxelOctreeNode::is_one_above_chunk(const JarVoxelTerrain *terrain) const
+inline bool VoxelOctreeNode::is_one_above_chunk(const JarVoxelTerrain &terrain) const
 {
-    return _size == (LoD + terrain->get_min_chunk_size() + 1);
+    return _size == (LoD + terrain.get_min_chunk_size() + 1);
 }
 
-inline bool VoxelOctreeNode::is_not_edge_chunk(const JarVoxelTerrain *terrain) const
+inline bool VoxelOctreeNode::is_not_edge_chunk(const JarVoxelTerrain &terrain) const
 {
     return true;
-    // return LoD == terrain->get_lod()->lod_at(_center + glm::vec3(edge_length(), 0, 0)) &&
-    //        LoD == terrain->get_lod()->lod_at(_center - glm::vec3(edge_length(), 0, 0)) &&
-    //        LoD == terrain->get_lod()->lod_at(_center + glm::vec3(0, edge_length(), 0)) &&
-    //        LoD == terrain->get_lod()->lod_at(_center - glm::vec3(0, edge_length(), 0)) &&
-    //        LoD == terrain->get_lod()->lod_at(_center + glm::vec3(0, 0, edge_length())) &&
-    //        LoD == terrain->get_lod()->lod_at(_center - glm::vec3(0, 0, edge_length()));
+    // return LoD == terrain.get_lod()->lod_at(_center + glm::vec3(edge_length(), 0, 0)) &&
+    //        LoD == terrain.get_lod()->lod_at(_center - glm::vec3(edge_length(), 0, 0)) &&
+    //        LoD == terrain.get_lod()->lod_at(_center + glm::vec3(0, edge_length(), 0)) &&
+    //        LoD == terrain.get_lod()->lod_at(_center - glm::vec3(0, edge_length(), 0)) &&
+    //        LoD == terrain.get_lod()->lod_at(_center + glm::vec3(0, 0, edge_length())) &&
+    //        LoD == terrain.get_lod()->lod_at(_center - glm::vec3(0, 0, edge_length()));
 }
 
 void VoxelOctreeNode::populateUniqueLoDValues(std::vector<int> &lodValues) const
@@ -104,17 +104,39 @@ void VoxelOctreeNode::populateUniqueLoDValues(std::vector<int> &lodValues) const
     }
 }
 
-void VoxelOctreeNode::build(JarVoxelTerrain *terrain, bool ignoreLoD)
+bool VoxelOctreeNode::is_enqueued() const
 {
-    build(terrain, is_chunk(terrain) || is_one_above_chunk(terrain) ? LoD : std::numeric_limits<int>::min(), ignoreLoD);
+    return _isEnqueued;
 }
 
-void VoxelOctreeNode::build(JarVoxelTerrain *terrain, int chunkLoD, bool ignoreLoD)
+bool VoxelOctreeNode::is_parent_enqueued() const
 {
-    if (!ignoreLoD)
+    return _parent == nullptr ? false : _parent->is_enqueued();
+}
+
+bool VoxelOctreeNode::is_any_children_enqueued() const
+{
+    if (is_leaf())
+        return false;
+    for (const auto &child : *_children)
     {
-        LoD = (chunkLoD == std::numeric_limits<int>::min()) ? terrain->get_lod()->desired_lod(*this) : chunkLoD;
+        if (child->is_enqueued())
+            return true;
     }
+    return false;
+}
+
+inline bool VoxelOctreeNode::should_delete_chunk(const JarVoxelTerrain &terrain) const
+{
+    return false;
+}
+
+void VoxelOctreeNode::build(JarVoxelTerrain &terrain, bool ignoreLoD)
+{
+    // if (!ignoreLoD)
+    // {
+    LoD = terrain.get_lod()->desired_lod(*this);
+    // }
 
     if (!is_chunk(terrain))
     {
@@ -124,12 +146,13 @@ void VoxelOctreeNode::build(JarVoxelTerrain *terrain, int chunkLoD, bool ignoreL
     if (LoD < 0 && !ignoreLoD)
         return;
 
-    if (!_isSet && !_isModified)
+    if (!_isSet)
     {
-        bool shouldSubdivide = set_terrain_sdf(terrain);
-        if (shouldSubdivide && (_size > LoD || ignoreLoD))
+        float value = terrain.get_sdf()->distance(_center);
+        set_value(value);
+        if (has_surface(terrain, value) && (_size > LoD || ignoreLoD))
         {
-            subdivide(terrain->_octreeScale);
+            subdivide(terrain._octreeScale);
             _isSet = true;
         }
         if (_size == min_size())
@@ -138,12 +161,9 @@ void VoxelOctreeNode::build(JarVoxelTerrain *terrain, int chunkLoD, bool ignoreL
 
     if (!is_leaf() && !(is_chunk(terrain) && _chunk != nullptr))
     {
-        if (is_chunk(terrain) || is_one_above_chunk(terrain))
-            chunkLoD = LoD;
-
         for (auto &child : *_children)
         {
-            child->build(terrain, chunkLoD, ignoreLoD);
+            child->build(terrain, ignoreLoD);
         }
     }
 
@@ -154,32 +174,13 @@ void VoxelOctreeNode::build(JarVoxelTerrain *terrain, int chunkLoD, bool ignoreL
     }
 }
 
-bool VoxelOctreeNode::has_surface(const JarVoxelTerrain *terrain, float value)
+bool VoxelOctreeNode::has_surface(const JarVoxelTerrain &terrain, const float value)
 {
     return std::abs(value) <
-           (1 << _size) * terrain->_octreeScale * 1.44224957f; //(3*(1/2)^3)^(1/3) = 1.44224957 for d instead of r
+           (1 << _size) * terrain._octreeScale * 1.44224957f * 1.5f; //(3*(1/2)^3)^(1/3) = 1.44224957 for d instead of r
 }
 
-bool VoxelOctreeNode::set_terrain_sdf(const JarVoxelTerrain *terrain)
-{
-    float value = terrain->get_sdf()->distance(_center);
-    set_value(value);
-    return has_surface(terrain, value);
-}
-
-void VoxelOctreeNode::modify(float newValue)
-{
-    float v = get_value();
-    set_value(newValue);
-    _isSet = true;
-    _isModified = true;
-    // if (std::abs(v - newValue) > 0.1f)
-    // {
-    //     NodeColor.r = 1.0f;
-    // }
-}
-
-void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain *terrain, const ModifySettings &settings)
+void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain &terrain, const ModifySettings &settings)
 {
     if (settings.sdf.is_null())
     {
@@ -187,31 +188,38 @@ void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain *terrain, const Modif
         return;
     }
 
-    auto bounds = get_bounds(terrain->_octreeScale);
+    auto bounds = get_bounds(terrain._octreeScale);
     if (!settings.bounds.intersects(bounds))
         return;
 
-    float newValue = SDF::apply_operation(settings.operation, get_value(),
-                                          settings.sdf->distance(_center - settings.position), terrain->_octreeScale);
+    LoD = terrain.get_lod()->desired_lod(*this);
     if (!_isSet)
-        build(terrain, true);    
+        set_value(terrain.get_sdf()->distance(_center));
 
-    if (!is_leaf() || _size > 0 && has_surface(terrain, newValue))
+    float old_value = get_value();
+    float sdf_value = settings.sdf->distance(_center - settings.position);
+    float new_value = SDF::apply_operation(settings.operation, old_value, sdf_value, terrain._octreeScale);
+
+    // set_value(settings.sdf->distance(_center - settings.position));
+
+    if (has_surface(terrain, new_value)) // || has_surface(terrain, sdf_value)
     {
-        if (is_leaf())
-            subdivide(terrain->_octreeScale);
-        _isSet = true;
-        _isModified = true;
+        subdivide(terrain._octreeScale);
+    }
+    else
+    {
+        if (settings.bounds.encloses(bounds))
+            prune_children();
+    }
+    set_value(new_value);
+    _isSet = true;
+
+    if (!is_leaf())
+    {
         for (auto &child : *_children)
         {
             child->modify_sdf_in_bounds(terrain, settings);
         }
-    }
-    else if (settings.bounds.encloses(bounds))
-    {
-        modify(newValue);
-        prune_children();
-        delete_chunk();
     }
 
     if (is_chunk(terrain))
@@ -220,7 +228,7 @@ void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain *terrain, const Modif
         delete_chunk();
 }
 
-void VoxelOctreeNode::update_chunk(JarVoxelTerrain *terrain, const ChunkMeshData *chunkMeshData)
+void VoxelOctreeNode::update_chunk(JarVoxelTerrain &terrain, const ChunkMeshData *chunkMeshData)
 {
     _isEnqueued = false;
     if (chunkMeshData == nullptr || LoD < 0 || is_leaf())
@@ -231,19 +239,19 @@ void VoxelOctreeNode::update_chunk(JarVoxelTerrain *terrain, const ChunkMeshData
 
     if (_chunk == nullptr)
     {
-        _chunk = static_cast<JarVoxelChunk *>(terrain->get_chunk_scene()->instantiate());
-        terrain->add_child(_chunk);
+        _chunk = static_cast<JarVoxelChunk *>(terrain.get_chunk_scene()->instantiate());
+        terrain.add_child(_chunk);
     }
 
     _chunk->update_chunk(*chunkMeshData);
 }
 
-void VoxelOctreeNode::queue_update(JarVoxelTerrain *terrain)
+void VoxelOctreeNode::queue_update(JarVoxelTerrain &terrain)
 {
     if (_isEnqueued)
         return;
     _isEnqueued = true;
-    terrain->get_mesh_scheduler()->enqueue(this);
+    terrain.enqueue_chunk_update(*this);
 }
 
 void VoxelOctreeNode::delete_chunk()
@@ -256,13 +264,14 @@ void VoxelOctreeNode::delete_chunk()
     _chunk = nullptr;
 }
 
-void VoxelOctreeNode::get_voxel_leaves_in_bounds(const JarVoxelTerrain *terrain, const Bounds &bounds,
+void VoxelOctreeNode::get_voxel_leaves_in_bounds(const JarVoxelTerrain &terrain, const Bounds &bounds,
                                                  std::vector<VoxelOctreeNode *> &result)
 {
-    if (!get_bounds(terrain->_octreeScale).intersects(bounds))
+    if (!get_bounds(terrain._octreeScale).intersects(bounds))
         return;
 
-    // int minSize = 1 << LoD;
+    // LoD = terrain.get_lod()->desired_lod(*this);
+
     if (_size == LoD || (is_leaf() && _size >= LoD))
     {
         result.push_back(this);
@@ -278,7 +287,7 @@ void VoxelOctreeNode::get_voxel_leaves_in_bounds(const JarVoxelTerrain *terrain,
     }
 }
 
-inline VoxelOctreeNode *VoxelOctreeNode::create_child_node(const glm::vec3 &center, int size)
+inline std::unique_ptr<VoxelOctreeNode> VoxelOctreeNode::create_child_node(const glm::vec3 &center, int size)
 {
-    return new VoxelOctreeNode(this, center, size);
+    return std::make_unique<VoxelOctreeNode>(this, center, size);
 }

@@ -69,7 +69,7 @@ void JarVoxelTerrain::sphere_edit(const Vector3 &position, const float radius, b
 {
     glm::vec3 pos = glm::vec3(position.x, position.y, position.z);
     auto operation =
-        operation_union ? SDF::Operation::SDF_OPERATION_SMOOTH_UNION : SDF::Operation::SDF_OPERATION_SMOOTH_SUBTRACTION;
+        operation_union ? SDF::Operation::SDF_OPERATION_UNION : SDF::Operation::SDF_OPERATION_SUBTRACTION;
     Ref<JarSphereSdf> sdf;
     sdf.instantiate();
     sdf->set_radius(radius);
@@ -78,9 +78,14 @@ void JarVoxelTerrain::sphere_edit(const Vector3 &position, const float radius, b
     if (_isBuilding)
         return;
     ModifySettings settings = {sdf, Bounds(pos - edge, pos + edge), pos, operation};
-    _voxelRoot->modify_sdf_in_bounds(this, settings);
+    _voxelRoot->modify_sdf_in_bounds(*this, settings);
     //_populationRoot->remove_population(settings);
     //_modifySettingsQueue.push({sdf, Bounds(pos - edge, pos + edge), pos, operation});
+}
+
+void JarVoxelTerrain::enqueue_chunk_update(VoxelOctreeNode &node)
+{
+    _meshComputeScheduler->enqueue(node);
 }
 
 Node3D *JarVoxelTerrain::get_player_node() const
@@ -116,10 +121,10 @@ void JarVoxelTerrain::set_sdf(const Ref<JarSignedDistanceField> &sdf)
     _sdf = sdf;
 }
 
-MeshComputeScheduler *JarVoxelTerrain::get_mesh_scheduler() const
-{
-    return _meshComputeScheduler;
-}
+// std:: MeshComputeScheduler JarVoxelTerrain::get_mesh_scheduler() const
+// {
+//     return _meshComputeScheduler;
+// }
 
 float JarVoxelTerrain::get_octree_scale() const
 {
@@ -221,8 +226,8 @@ void JarVoxelTerrain::initialize()
     UtilityFunctions::print("Start");
     _chunkSize = (1 << _minChunkSize);
     _voxelLod->init();
-    _meshComputeScheduler = new MeshComputeScheduler(12);
-    _voxelRoot = new VoxelOctreeNode(_size);
+    _meshComputeScheduler = std::make_unique<MeshComputeScheduler>(12);
+    _voxelRoot = std::make_unique<VoxelOctreeNode>(_size);
     //_populationRoot = memnew(PopulationOctreeNode(_size));
     build();
 }
@@ -231,7 +236,7 @@ void JarVoxelTerrain::process()
 {
     if (_voxelLod->process(*this, 0.0))
         build();
-    _meshComputeScheduler->process(this);
+    _meshComputeScheduler->process(*this);
 
     if (!_modifySettingsQueue.empty())
     {
@@ -264,7 +269,7 @@ void JarVoxelTerrain::build()
         _isBuilding = true;
 
         //_meshComputeScheduler->clear_queue();
-        _voxelRoot->build(this);
+        _voxelRoot->build(*this);
         _isBuilding = false;
     }).detach();
 
@@ -317,21 +322,34 @@ void JarVoxelTerrain::process_modify_queue()
     if (_isBuilding)
         return;
     _isBuilding = true;
-    std::thread([this]() {
+    // std::thread([this]() {
         if (!_modifySettingsQueue.empty())
         {
             auto &settings = _modifySettingsQueue.front();
             _modifySettingsQueue.pop();
-            _voxelRoot->modify_sdf_in_bounds(this, settings);
+            _voxelRoot->modify_sdf_in_bounds(*this, settings);
             //_populationRoot->remove_population(settings);
         }
         _isBuilding = false;
-    }).detach();
+    // }).detach();
 }
+
+// void JarVoxelTerrain::process_delete_chunk_queue()
+// {
+//     if (_isBuilding)
+//         return;  
+//     while (!_deleteChunkQueue.empty()) {
+//         auto node = _deleteChunkQueue.front();
+//         _deleteChunkQueue.pop();
+
+//         if(node.is_parent_enqueued() || node.is_enqueued() || node.is_any_children_enqueued()) continue;
+//         //delete and check if parents/children should be deleted.
+//     }
+// }
 
 void JarVoxelTerrain::get_voxel_leaves_in_bounds(const Bounds &bounds, std::vector<VoxelOctreeNode *> &nodes) const
 {
-    _voxelRoot->get_voxel_leaves_in_bounds(this, bounds, nodes);
+    _voxelRoot->get_voxel_leaves_in_bounds(*this, bounds, nodes);
 }
 
 void JarVoxelTerrain::spawn_debug_spheres_in_bounds(const Vector3 &position, const float range)

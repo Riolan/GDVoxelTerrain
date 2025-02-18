@@ -32,6 +32,7 @@ class JarVoxelLoD : public Resource
     std::vector<float> _lodLevels;
 
   protected:
+    int clipmap_lod_at(const glm::vec3 &position) const;
     static void _bind_methods();
 
   public:
@@ -61,6 +62,8 @@ class JarVoxelLoD : public Resource
     int desired_lod(const VoxelOctreeNode &node, float factor = 1.0f);
 
     int lod_at(const glm::vec3 &position, float factor = 1.0f);
+    float lod_to_grid_size(const int lod) const;
+    glm::vec3 snap_to_grid(const glm::vec3 pos, const float grid_size) const;
 };
 
 #endif // LEVEL_OF_DETAIL_H

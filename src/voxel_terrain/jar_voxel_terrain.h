@@ -26,15 +26,16 @@ class JarVoxelTerrain : public Node3D
     GDCLASS(JarVoxelTerrain, Node3D);
 
   public:
-    MeshComputeScheduler *_meshComputeScheduler;
+    std::unique_ptr<MeshComputeScheduler> _meshComputeScheduler;
     Ref<JarVoxelLoD> _voxelLod;
 
     std::vector<float> _voxelEpsilons;
 
     Ref<JarSignedDistanceField> _sdf;
-    VoxelOctreeNode *_voxelRoot;
+    std::unique_ptr<VoxelOctreeNode> _voxelRoot;
 
     std::queue<ModifySettings> _modifySettingsQueue;
+    // std::queue<VoxelOctreeNode*> _deleteChunkQueue;
 
     // Exported variables
     float _octreeScale = 1.0f;
@@ -54,6 +55,8 @@ class JarVoxelTerrain : public Node3D
     void generate_epsilons();
     void process_modify_queue();
 
+    // void process_delete_chunk_queue();
+
   protected:
     static void _bind_methods();
 
@@ -64,10 +67,11 @@ class JarVoxelTerrain : public Node3D
     void modify(const Ref<JarSignedDistanceField> sdf, const SDF::Operation operation, const Vector3 &position,
                 const float radius);
     void sphere_edit(const Vector3 &position, const float radius, bool operation_union);
+    void enqueue_chunk_update(VoxelOctreeNode& node);
 
     // properties
     bool is_building() const;
-    MeshComputeScheduler *get_mesh_scheduler() const;
+    // MeshComputeScheduler *get_mesh_scheduler() const;
 
     // properties
     Node3D *get_player_node() const;
