@@ -1,4 +1,6 @@
 #include "jar_voxel_chunk.h"
+#include <godot_cpp/classes/sphere_mesh.hpp>
+#include <godot_cpp/classes/standard_material3d.hpp>
 
 void JarVoxelChunk::_bind_methods()
 {
@@ -155,6 +157,25 @@ void JarVoxelChunk::update_chunk(const ChunkMeshData &chunk_mesh_data)
     {
         // collision_shape->set_disabled(!chunk_mesh_data->has_collision_mesh());
         concave_polygon_shape->set_faces(chunk_mesh_data.create_collision_mesh());
+    }
+
+    Ref<StandardMaterial3D> stitch_material;
+    stitch_material.instantiate();
+    stitch_material->set_albedo(Color(1, 0, 1));
+    Ref<SphereMesh> sphere_mesh;
+    sphere_mesh.instantiate();
+    sphere_mesh->set_radius(0.4f);
+    sphere_mesh->set_height(0.8f);
+    PackedVector3Array verts = chunk_mesh_data.mesh_array[Mesh::ARRAY_VERTEX];
+    //stitching
+    for (auto& [position, vertexId]: chunk_mesh_data.edgeIndices) 
+    {  
+        Vector3 nodeCenter = verts[vertexId];
+        MeshInstance3D *sphereInstance = memnew(MeshInstance3D);
+        add_child(sphereInstance);
+        sphereInstance->set_mesh(sphere_mesh);
+        sphereInstance->set_position(nodeCenter);
+        sphereInstance->set_material_override(stitch_material);
     }
 }
 

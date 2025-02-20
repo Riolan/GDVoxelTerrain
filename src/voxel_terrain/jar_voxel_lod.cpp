@@ -131,7 +131,7 @@ inline int JarVoxelLoD::lod_at(const glm::vec3 &position) const {
         glm::vec3 lod_cam_pos = snap_to_grid(cam_pos, grid_size);
         glm::vec3 delta = abs(pos - lod_cam_pos);
         float dist = glm::max(glm::max(delta.x, delta.y), delta.z);
-        if (dist < grid_size * 2.0) {
+        if (dist < grid_size * (2.0f + 1/16.0f)) {
             return lod;
         }
     }

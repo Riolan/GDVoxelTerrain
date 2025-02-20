@@ -1,7 +1,8 @@
 #include "mesh_compute_scheduler.h"
 #include "chunk_mesh_data.h"
 #include "jar_voxel_terrain.h"
-#include "adaptive_surface_nets/adaptive_surface_nets.h"
+// #include "adaptive_surface_nets/adaptive_surface_nets.h"
+#include "stitched_surface_nets/stitched_surface_nets.h"
 #include "voxel_octree_node.h"
 
 MeshComputeScheduler::MeshComputeScheduler(int maxConcurrentTasks)
@@ -55,7 +56,8 @@ void MeshComputeScheduler::run_task(const JarVoxelTerrain &terrain, ScheduledChu
     std::thread([this, &terrain, &chunk]() {
         int triCount = 0;
 
-        auto meshCompute = AdaptiveSurfaceNets(terrain, chunk);
+        auto meshCompute = StitchedSurfaceNets(terrain, chunk);
+        // auto meshCompute = AdaptiveSurfaceNets(terrain, chunk);
         ChunkMeshData *chunkMeshData = meshCompute.generate_mesh_data(terrain);
         ChunksToProcess.push(std::make_pair(&(chunk.node), chunkMeshData));
 

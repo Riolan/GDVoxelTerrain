@@ -1,0 +1,94 @@
+#ifndef MESH_CHUNK_H
+#define MESH_CHUNK_H
+
+#include "voxel_octree_node.h"
+#include <glm/glm.hpp>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+class JarVoxelTerrain;
+
+class StitchedMeshChunk
+{
+  public:
+    static const std::vector<glm::vec3> checkLodOffsets;
+    static const std::vector<glm::ivec3> Offsets;
+    static const std::vector<glm::ivec2> Edges;
+    static const std::vector<glm::ivec3> YzOffsets;
+    static const std::vector<glm::ivec3> XzOffsets;
+    static const std::vector<glm::ivec3> XyOffsets;
+    static const std::vector<std::vector<glm::ivec3>> FaceOffsets;
+
+    bool should_have_quad(const glm::ivec3 &position, const int face) const;
+    inline int get_node_index_at(const glm::ivec3 &pos) const;
+    bool get_unique_neighbouring_vertices(const glm::ivec3 &pos, const std::vector<glm::ivec3> &offsets,
+                                          std::vector<int> &result) const;
+
+    bool get_neighbours(const glm::ivec3 &pos, std::vector<int> &result) const;
+
+    StitchedMeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chunk);
+
+    bool is_edge_chunk() const
+    {
+        return IsEdgeChunk;
+    }
+
+    inline bool is_on_any_boundary(const glm::ivec3 &position) const
+    {
+        // return is_on_boundary(_lodL2HBoundaries, position);
+        // // return is_on_boundary(_lodL2HBoundaries | _lodH2LBoundaries, position);
+
+        return is_on_boundary(_lodL2HBoundaries, position) || _lodH2LBoundaries != 1 && (position.x == LargestPos - 2 && (_lodH2LBoundaries & 0b1) > 0 ||
+                                          position.x == 1 && (_lodH2LBoundaries & 0b10) > 0 ||
+                                          position.y == LargestPos - 2 && (_lodH2LBoundaries & 0b100) > 0 ||
+                                          position.y == 1 && (_lodH2LBoundaries & 0b1000) > 0 ||
+                                          position.z == LargestPos - 2 && (_lodH2LBoundaries & 0b10000) > 0 ||
+                                          position.z == 1 && (_lodH2LBoundaries & 0b100000) > 0);
+    }
+
+    inline bool is_on_boundary(const uint8_t boundaries, const glm::ivec3 &position) const
+    {
+        return boundaries != 0 &&
+               (position.x == LargestPos && (boundaries & 0b1) > 0 || position.x == 0 && (boundaries & 0b10) > 0 ||
+                position.y == LargestPos && (boundaries & 0b100) > 0 || position.y == 0 && (boundaries & 0b1000) > 0 ||
+                position.z == LargestPos && (boundaries & 0b10000) > 0 ||
+                position.z == 0 && (boundaries & 0b100000) > 0);
+    }
+
+    const std::vector<glm::ivec3> &get_positions() const
+    {
+        return positions;
+    }
+    const std::vector<int> &get_vertex_indices() const
+    {
+        return vertexIndices;
+    }
+    const std::vector<int> &get_face_dirs() const
+    {
+        return faceDirs;
+    }
+
+    glm::vec3 get_half_leaf_size() const
+    {
+        return half_leaf_size;
+    }
+
+    // glm::ivec3 Octant{1, 1, 1};
+    std::vector<VoxelOctreeNode *> nodes;
+    std::vector<glm::ivec3> positions;
+    std::vector<int> vertexIndices;
+    std::vector<int> faceDirs;
+
+  private:
+    glm::vec3 half_leaf_size;
+    const static int ChunkRes = 16 + 2;
+    const static int LargestPos = ChunkRes - 1;
+    std::vector<int> _leavesLut;
+    bool IsEdgeChunk = false;
+    // chunk boundaries, 6 bits each: 0,0,-z,z,-y,y,-x,x
+    uint8_t _lodL2HBoundaries; // boundaries from low lod to high lod, i.e. large to small chunks
+    uint8_t _lodH2LBoundaries; // boundaries from high lod to low lod, i.e. small to large chunks
+};
+
+#endif // MESH_CHUNK_H

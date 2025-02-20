@@ -5,7 +5,11 @@
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/vector3.hpp>
 #include <vector>
+#include <unordered_map>
 #include "bounds.h"
+#include <glm/glm.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 
 using namespace godot;
 
@@ -19,6 +23,7 @@ class ChunkMeshData
     int lod;
     bool edge_chunk;
     Bounds bounds;
+    std::unordered_map<glm::ivec3, int> edgeIndices;
     // ChunkDetailData chunk_detail_data;
 
     bool has_collision_mesh() const
