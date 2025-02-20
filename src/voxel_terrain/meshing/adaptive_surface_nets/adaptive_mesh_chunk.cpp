@@ -1,27 +1,27 @@
-#include "mesh_chunk.h"
+#include "adaptive_mesh_chunk.h"
 #include "jar_voxel_terrain.h"
 #include "utils.h"
 
-const std::vector<glm::ivec3> MeshChunk::Offsets = {glm::ivec3(0, 0, 0), glm::ivec3(1, 0, 0), glm::ivec3(0, 1, 0),
+const std::vector<glm::ivec3> AdaptiveMeshChunk::Offsets = {glm::ivec3(0, 0, 0), glm::ivec3(1, 0, 0), glm::ivec3(0, 1, 0),
                                                     glm::ivec3(1, 1, 0), glm::ivec3(0, 0, 1), glm::ivec3(1, 0, 1),
                                                     glm::ivec3(0, 1, 1), glm::ivec3(1, 1, 1)};
 
-const std::vector<glm::ivec2> MeshChunk::Edges = {
+const std::vector<glm::ivec2> AdaptiveMeshChunk::Edges = {
     glm::ivec2(0, 1), glm::ivec2(2, 3), glm::ivec2(4, 5), glm::ivec2(6, 7), glm::ivec2(0, 2), glm::ivec2(1, 3),
     glm::ivec2(4, 6), glm::ivec2(5, 7), glm::ivec2(0, 4), glm::ivec2(1, 5), glm::ivec2(2, 6), glm::ivec2(3, 7)};
 
-const std::vector<glm::ivec3> MeshChunk::YzOffsets = {glm::ivec3(0, 0, 0), glm::ivec3(0, 1, 0), glm::ivec3(0, 0, 1),
+const std::vector<glm::ivec3> AdaptiveMeshChunk::YzOffsets = {glm::ivec3(0, 0, 0), glm::ivec3(0, 1, 0), glm::ivec3(0, 0, 1),
                                                       glm::ivec3(0, 1, 1)};
 
-const std::vector<glm::ivec3> MeshChunk::XzOffsets = {glm::ivec3(0, 0, 0), glm::ivec3(1, 0, 0), glm::ivec3(0, 0, 1),
+const std::vector<glm::ivec3> AdaptiveMeshChunk::XzOffsets = {glm::ivec3(0, 0, 0), glm::ivec3(1, 0, 0), glm::ivec3(0, 0, 1),
                                                       glm::ivec3(1, 0, 1)};
 
-const std::vector<glm::ivec3> MeshChunk::XyOffsets = {glm::ivec3(0, 0, 0), glm::ivec3(1, 0, 0), glm::ivec3(0, 1, 0),
+const std::vector<glm::ivec3> AdaptiveMeshChunk::XyOffsets = {glm::ivec3(0, 0, 0), glm::ivec3(1, 0, 0), glm::ivec3(0, 1, 0),
                                                       glm::ivec3(1, 1, 0)};
 
-const std::vector<std::vector<glm::ivec3>> MeshChunk::FaceOffsets = {YzOffsets, XzOffsets, XyOffsets};
+const std::vector<std::vector<glm::ivec3>> AdaptiveMeshChunk::FaceOffsets = {YzOffsets, XzOffsets, XyOffsets};
 
-MeshChunk::MeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chunk)
+AdaptiveMeshChunk::AdaptiveMeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chunk)
 {
     glm::vec3 chunkCenter = chunk._center;
     auto cameraPosition = terrain.get_lod()->get_camera_position();
@@ -129,7 +129,7 @@ MeshChunk::MeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chun
     }
 }
 
-bool MeshChunk::should_have_quad(const glm::ivec3 &position, const int face, const bool isSmall) const
+bool AdaptiveMeshChunk::should_have_quad(const glm::ivec3 &position, const int face, const bool isSmall) const
 {
     //this implementation isn't quite perfect. The primary goal is to prevent quads/tris parallel to chunk boundaries on chunk boundaries to generate in both chunks.
     auto withinBounds = [this, isSmall](int sign, int pos) {
@@ -151,7 +151,7 @@ bool MeshChunk::should_have_quad(const glm::ivec3 &position, const int face, con
     }
 }
 
-inline int MeshChunk::get_node_index_at(const glm::ivec3 &pos) const
+inline int AdaptiveMeshChunk::get_node_index_at(const glm::ivec3 &pos) const
 {
     if (pos.x < 0 || pos.x >= _chunkResolution || pos.y < 0 || pos.y >= _chunkResolution || pos.z < 0 ||
         pos.z >= _chunkResolution)
@@ -160,7 +160,7 @@ inline int MeshChunk::get_node_index_at(const glm::ivec3 &pos) const
         return (_leavesLut[pos.x + _chunkResolution * (pos.y + _chunkResolution * pos.z)] - 1);
 }
 
-bool MeshChunk::get_unique_neighbouring_vertices(const glm::ivec3 &pos, const std::vector<glm::ivec3> &offsets,
+bool AdaptiveMeshChunk::get_unique_neighbouring_vertices(const glm::ivec3 &pos, const std::vector<glm::ivec3> &offsets,
                                                  std::vector<int> &result) const
 {
     for (const auto &o : offsets)
@@ -176,9 +176,9 @@ bool MeshChunk::get_unique_neighbouring_vertices(const glm::ivec3 &pos, const st
     return true;
 }
 
-bool MeshChunk::get_neighbours(const glm::ivec3 &pos, std::vector<int> &result) const
+bool AdaptiveMeshChunk::get_neighbours(const glm::ivec3 &pos, std::vector<int> &result) const
 {
-    for (const auto &o : MeshChunk::Offsets)
+    for (const auto &o : AdaptiveMeshChunk::Offsets)
     {
         auto n = get_node_index_at(pos + o * Octant);
         if (n < 0)

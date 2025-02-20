@@ -109,26 +109,10 @@ bool JarVoxelLoD::update_camera_position(const JarVoxelTerrain &terrain, const b
 
 int JarVoxelLoD::desired_lod(const VoxelOctreeNode &node, float factor)
 {
-    auto l = node._size > _maxChunkSize ? 0 : clipmap_lod_at(node._center);
-    // auto l = node._size > _maxChunkSize ? 0 : lod_at(node._center, factor);
+    auto l = node._size > _maxChunkSize ? 0 : lod_at(node._center);
     return l;
 }
 
-int JarVoxelLoD::lod_at(const glm::vec3 &position, float factor)
-{
-    glm::vec3 temp = position - _cameraPosition;
-    float d = dot(temp, temp) * factor;
-
-    for (size_t i = 0; i < _lodLevels.size(); i++)
-    {
-        if (d < _lodLevels[i])
-        {
-            return static_cast<int>(i);
-        }
-    }
-
-    return -1;
-}
 
 inline float JarVoxelLoD::lod_to_grid_size(const int lod) const {
     return (1 << lod) * 2.0f; // times octree scale
@@ -139,8 +123,7 @@ inline glm::vec3 JarVoxelLoD::snap_to_grid(const glm::vec3 pos, const float grid
 }
 
 
-int JarVoxelLoD::clipmap_lod_at(const glm::vec3 &position) const {
-
+inline int JarVoxelLoD::lod_at(const glm::vec3 &position) const {
     glm::vec3 pos = position / 16.0f;
     glm::vec3 cam_pos = _cameraPosition / 16.0f;
     for (int lod = 0; lod < _lodLevels.size(); lod++) {

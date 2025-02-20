@@ -9,7 +9,7 @@
 
 class JarVoxelTerrain;
 
-class MeshChunk
+class AdaptiveMeshChunk
 {
   public:
     static const std::vector<glm::ivec3> Offsets;
@@ -26,7 +26,7 @@ class MeshChunk
 
     bool get_neighbours(const glm::ivec3 &pos, std::vector<int> &result) const;
 
-    MeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chunk);
+    AdaptiveMeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chunk);
     int get_chunk_resolution() const
     {
         return _chunkResolution;

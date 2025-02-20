@@ -48,7 +48,7 @@ public:
 
     int priority() const;
 
-    void build(JarVoxelTerrain &terrain, bool ignoreLoD = false);
+    void build(JarVoxelTerrain &terrain);
     
     inline bool has_surface(const JarVoxelTerrain &terrain, const float value);
     void queue_update(JarVoxelTerrain &terrain);
@@ -57,6 +57,9 @@ public:
     
     void delete_chunk();
     void get_voxel_leaves_in_bounds(const JarVoxelTerrain &terrain, const Bounds& Bounds, std::vector<VoxelOctreeNode*>& result);
+
+private:
+    void get_voxel_leaves_in_bounds(const JarVoxelTerrain &terrain, const Bounds& Bounds, const int LOD, std::vector<VoxelOctreeNode*>& result);
 
 
 protected:

@@ -1,12 +1,12 @@
-#include "surface_nets.h"
+#include "adaptive_surface_nets.h"
 #include "fit_plane.h"
 #include <godot_cpp/classes/array_mesh.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include "jar_voxel_terrain.h"
-SurfaceNets::SurfaceNets(const JarVoxelTerrain &terrain, const ScheduledChunk &chunk)
-    : _chunk(&chunk.node), _meshChunk(MeshChunk(terrain, chunk.node))
+AdaptiveSurfaceNets::AdaptiveSurfaceNets(const JarVoxelTerrain &terrain, const ScheduledChunk &chunk)
+    : _chunk(&chunk.node), _meshChunk(AdaptiveMeshChunk(terrain, chunk.node))
 {
     int vertCount = _meshChunk.nodes.size();
     // _verts.reserve(vertCount);
@@ -15,7 +15,7 @@ SurfaceNets::SurfaceNets(const JarVoxelTerrain &terrain, const ScheduledChunk &c
     // _indices.reserve(vertCount * 6);
 }
 
-ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain &terrain)
+ChunkMeshData *AdaptiveSurfaceNets::generate_mesh_data(const JarVoxelTerrain &terrain)
 {
     // if(_meshChunk.is_edge_chunk())
     //      return nullptr;
@@ -36,7 +36,7 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain &terrain)
         Color color = Color(0, 0, 0, 0);
         glm::vec3 normal(0.0f);
         int duplicates = 0, edge_crossings = 0;
-        for (auto &edge : MeshChunk::Edges)
+        for (auto &edge : AdaptiveMeshChunk::Edges)
         {
             auto ai = neighbours[edge.x];
             auto bi = neighbours[edge.y];
@@ -137,7 +137,7 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain &terrain)
                 continue;
 
             auto neighbours = std::vector<int>();
-            if (_meshChunk.get_unique_neighbouring_vertices(pos, MeshChunk::FaceOffsets[i], neighbours))
+            if (_meshChunk.get_unique_neighbouring_vertices(pos, AdaptiveMeshChunk::FaceOffsets[i], neighbours))
             {
                 if (neighbours.size() == 4)
                 {
@@ -192,7 +192,7 @@ ChunkMeshData *SurfaceNets::generate_mesh_data(const JarVoxelTerrain &terrain)
                              _chunk->get_bounds(terrain._octreeScale));
 }
 
-inline void SurfaceNets::add_tri(int n0, int n1, int n2, bool flip)
+inline void AdaptiveSurfaceNets::add_tri(int n0, int n1, int n2, bool flip)
 {
     // if (_meshChunk.is_edge_chunk()) {
         // For each vertex in the triangle, only accumulate from good neighbors

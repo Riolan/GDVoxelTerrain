@@ -17,6 +17,8 @@ frequency = 0.001
 
 [sub_resource type="JarPlanetSdf" id="JarPlanetSdf_7il12"]
 noise = SubResource("FastNoiseLite_awrh7")
+radius = 4096.0
+center = Vector3(0, -4096, 0)
 noise_scale = 128.0
 
 [sub_resource type="Resource" id="JarSphereSdf_0ru4y"]
@@ -44,6 +46,7 @@ sdf = SubResource("JarPlanetSdf_7il12")
 transform = Transform3D(1, 0, 0.000401426, 0, 1, 0, -0.000401426, 0, 1, 0, 0, 0)
 
 [node name="Camera3D" type="Camera3D" parent="."]
+far = 16000.0
 script = ExtResource("2_kdd2p")
 move_speed = 64.0
 

@@ -2,7 +2,7 @@
 #define SURFACE_NETS_H
 
 #include "chunk_mesh_data.h"
-#include "mesh_chunk.h"
+#include "adaptive_mesh_chunk.h"
 #include "mesh_compute_scheduler.h"
 #include "jar_voxel_lod.h"
 #include "voxel_octree_node.h"
@@ -17,7 +17,7 @@ using namespace godot;
 
 class JarVoxelTerrain;
 
-class SurfaceNets
+class AdaptiveSurfaceNets
 {
   private:
     static const bool SquareVoxels = true;
@@ -33,13 +33,13 @@ class SurfaceNets
     std::vector<bool> _badNormals;
 
     const VoxelOctreeNode *_chunk;
-    MeshChunk _meshChunk;
+    AdaptiveMeshChunk _meshChunk;
     glm::vec3 _tempPoints[12];
 
     inline void add_tri(int n0, int n1, int n2, bool flip);
 
   public:
-    SurfaceNets(const JarVoxelTerrain &terrain, const ScheduledChunk &chunk);
+    AdaptiveSurfaceNets(const JarVoxelTerrain &terrain, const ScheduledChunk &chunk);
 
     ChunkMeshData *generate_mesh_data(const JarVoxelTerrain &terrain);
 };

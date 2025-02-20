@@ -17,12 +17,12 @@ env.Append(CPPPATH=[
     "src/sdf/",
     "src/voxel_terrain/",
     "src/voxel_terrain/meshing",
-    "src/voxel_terrain/meshing/surface_nets",
+    "src/voxel_terrain/meshing/adaptive_surface_nets",
 ])
 
 # Add main source files
 sources = Glob("src/*.cpp") + Glob("src/utility/*.cpp") + Glob("src/sdf/*.cpp") + \
-      Glob("src/voxel_terrain/*.cpp") + Glob("src/voxel_terrain/meshing/*.cpp") + Glob("src/voxel_terrain/meshing/surface_nets/*.cpp")
+      Glob("src/voxel_terrain/*.cpp") + Glob("src/voxel_terrain/meshing/*.cpp") + Glob("src/voxel_terrain/meshing/adaptive_surface_nets/*.cpp")
 
 #compiler flags
 if env['PLATFORM'] == 'windows':
