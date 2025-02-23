@@ -4,27 +4,90 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include "jar_voxel_terrain.h"
+#include "utility/utils.h"
+
 StitchedSurfaceNets::StitchedSurfaceNets(const JarVoxelTerrain &terrain, const ScheduledChunk &chunk)
     : _chunk(&chunk.node), _meshChunk(StitchedMeshChunk(terrain, chunk.node))
 {
-    int vertCount = _meshChunk.nodes.size();
+}
+
+void StitchedSurfaceNets::create_vertex(const int node_id, const std::vector<int> &neighbours, const bool on_ring)
+{
+    glm::vec3 vertexPosition(0.0f);
+    Color color = Color(0, 0, 0, 0);
+    glm::vec3 normal(0.0f);
+    int duplicates = 0, edge_crossings = 0;
+    for (auto &edge : StitchedMeshChunk::Edges)
+    {
+        auto ai = neighbours[edge.x];
+        auto bi = neighbours[edge.y];
+        auto na = _meshChunk.nodes[ai];
+        auto nb = _meshChunk.nodes[bi];
+        float valueA = na->get_value();
+        float valueB = nb->get_value();
+        glm::vec3 posA = na->_center;
+        glm::vec3 posB = nb->_center;
+
+        normal += (valueB - valueA) * (posB - posA);
+
+        if (glm::sign(valueA) == glm::sign(valueB))
+            continue;
+
+        // Color colorA = na->get_node_color();
+        // Color colorB = nb->get_node_color();
+
+        float t = glm::abs(valueA) / (glm::abs(valueA) + glm::abs(valueB));
+        glm::vec3 point = glm::mix(posA, posB, t);
+        vertexPosition += point;
+        edge_crossings++;
+        // color += color.linear_interpolate(colorA.linear_interpolate(colorB, t), 1.0f);
+    }
+
+    if (edge_crossings <= 0)
+        return;
+
+    //computes and stores the directions in which to generate quads, also determines winding order
+    _meshChunk.faceDirs[node_id] =
+        (static_cast<int>(glm::sign(glm::sign(_meshChunk.nodes[neighbours[6]]->get_value()) -
+                                    glm::sign(_meshChunk.nodes[neighbours[7]]->get_value())) +
+                          1))
+            << 0 |
+        (static_cast<int>(glm::sign(glm::sign(_meshChunk.nodes[neighbours[7]]->get_value()) -
+                                    glm::sign(_meshChunk.nodes[neighbours[5]]->get_value())) +
+                          1))
+            << 2 |
+        (static_cast<int>(glm::sign(glm::sign(_meshChunk.nodes[neighbours[3]]->get_value()) -
+                                    glm::sign(_meshChunk.nodes[neighbours[7]]->get_value())) +
+                          1))
+            << 4;
+
+    vertexPosition /= static_cast<float>(edge_crossings);
+    color /= static_cast<float>(edge_crossings);
+    normal = glm::normalize(normal);
+    // // if (SquareVoxels)
+    // vertexPosition = _meshChunk.nodes[node_id]->_center;
+
+    vertexPosition -= _chunk->_center;
+    int vertexIndex = _verts.size();
+    glm::ivec3 grid_position = _meshChunk.positions[node_id];
+    if ((on_ring || _meshChunk.is_on_any_boundary(grid_position)) &&
+        _meshChunk.should_have_boundary_quad(neighbours, on_ring))
+    {
+        if (on_ring)
+            _ringEdgeNodes[grid_position] = node_id;
+        else
+            _innerEdgeNodes[grid_position] = node_id;
+    }
+
+    _meshChunk.vertexIndices[node_id] = vertexIndex;
+    _verts.push_back({vertexPosition.x, vertexPosition.y, vertexPosition.z});
+    _normals.push_back({normal.x, normal.y, normal.z});
+    _colors.push_back(color);
 }
 
 ChunkMeshData *StitchedSurfaceNets::generate_mesh_data(const JarVoxelTerrain &terrain)
 {
-    // if(_meshChunk.is_edge_chunk())
-    //      return nullptr;
-    //shell stitching idea:
-    // get all vertices in a ring around the chunk based on aabb/lod thingy
-    // we will assume that these are homogenous in size 2x that of the primary ones
-    // process them in the same way as the primary ones to get vertices
-    // then, process main chunk as we do right now
-    // then, process the ring vertices by iterating through the ones with vertices
-    // most importantly, we need two things: 1 way to easily interface between both ring and main chunk, and 2: the direction to check in.
-    //  1: assuming homogenous and 2x size of ring, we divide by 2 to get the main chunk position.
-    // 2: can be solved using octant relative to chunk center? 
-
-    for (size_t node_id = 0; node_id < _meshChunk.nodes.size(); node_id++)
+    for (size_t node_id = 0; node_id < _meshChunk.innerNodeCount; node_id++)
     {
         if (_meshChunk.vertexIndices[node_id] <= -2)
             continue;
@@ -33,96 +96,58 @@ ChunkMeshData *StitchedSurfaceNets::generate_mesh_data(const JarVoxelTerrain &te
 
         if (!_meshChunk.get_neighbours(grid_position, neighbours))
             continue;
-
-        glm::vec3 vertexPosition(0.0f);
-        Color color = Color(0, 0, 0, 0);
-        glm::vec3 normal(0.0f);
-        int duplicates = 0, edge_crossings = 0;
-        for (auto &edge : StitchedMeshChunk::Edges)
-        {
-            auto ai = neighbours[edge.x];
-            auto bi = neighbours[edge.y];
-            if (ai == bi)
-            {
-                duplicates++;
-                continue;
-            }
-            auto na = _meshChunk.nodes[ai];
-            auto nb = _meshChunk.nodes[bi];
-
-            float valueA = na->get_value();
-            float valueB = nb->get_value();
-            glm::vec3 posA = na->_center;
-            glm::vec3 posB = nb->_center;
-
-            normal += (valueB - valueA) * (posB - posA);
-
-            if (glm::sign(valueA) == glm::sign(valueB))
-                continue;
-
-            // Color colorA = na->get_node_color();
-            // Color colorB = nb->get_node_color();
-
-            float t = glm::abs(valueA) / (glm::abs(valueA) + glm::abs(valueB));
-            glm::vec3 point = glm::mix(posA, posB, t);
-            vertexPosition += point;
-            _tempPoints[edge_crossings++] = point;
-            // color += color.linear_interpolate(colorA.linear_interpolate(colorB, t), 1.0f);
-        }
-
-        if (edge_crossings <= 0)
-        {
-            // UtilityFunctions::print("No crossings!");
-            continue;
-        }
-
-        _meshChunk.faceDirs[node_id] =
-            (static_cast<int>(glm::sign(glm::sign(_meshChunk.nodes[neighbours[6]]->get_value()) -
-                                        glm::sign(_meshChunk.nodes[neighbours[7]]->get_value())) +
-                              1))
-                << 0 |
-            (static_cast<int>(glm::sign(glm::sign(_meshChunk.nodes[neighbours[7]]->get_value()) -
-                                        glm::sign(_meshChunk.nodes[neighbours[5]]->get_value())) +
-                              1))
-                << 2 |
-            (static_cast<int>(glm::sign(glm::sign(_meshChunk.nodes[neighbours[3]]->get_value()) -
-                                        glm::sign(_meshChunk.nodes[neighbours[7]]->get_value())) +
-                              1))
-                << 4;
-
-        vertexPosition /= static_cast<float>(edge_crossings);
-        color /= static_cast<float>(edge_crossings);
-        normal = glm::normalize(normal);
-
-        // if (SquareVoxels)
-        // vertexPosition = _meshChunk.nodes[node_id]->_center;
-
-        vertexPosition -= _chunk->_center;
-        int vertexIndex = (_verts.size());
-
-        if (_meshChunk.is_on_any_boundary(grid_position))
-            _edgeIndices[grid_position] = (vertexIndex);
-
-        _meshChunk.vertexIndices[node_id] = vertexIndex;
-        _verts.push_back({vertexPosition.x, vertexPosition.y, vertexPosition.z});
-        _normals.push_back({normal.x, normal.y, normal.z});
-        _colors.push_back(color);
+        create_vertex(node_id, neighbours, false);
     }
 
-    if (_verts.size() == 0)
-    {
-        // UtilityFunctions::printerr("No vertices!");
+    if (_verts.size() == 0)    
         return nullptr;
-    }
+    
 
-    for (size_t node_id = 0; node_id < _meshChunk.nodes.size(); node_id++)
+    // if on lod boundary, add an additional pass
+    for (size_t node_id = _meshChunk.innerNodeCount; node_id < _meshChunk.innerNodeCount + _meshChunk.ringNodeCount;
+         node_id++)
+    {
+        if (_meshChunk.vertexIndices[node_id] <= -2)
+            continue;
+        auto neighbours = std::vector<int>();
+        glm::ivec3 grid_position = _meshChunk.positions[node_id];
+
+        if (!_meshChunk.get_ring_neighbours(grid_position, neighbours))
+            continue;
+        create_vertex(node_id, neighbours, true);
+        // if (false)
+        // { // print the nodes itself
+        //     glm::vec3 vertexPosition = _meshChunk.nodes[node_id]->_center;
+        //     vertexPosition -= _chunk->_center;
+        //     int vertexIndex = (_verts.size());
+        //     _meshChunk.vertexIndices[node_id] = vertexIndex;
+        //     _verts.push_back({vertexPosition.x, vertexPosition.y, vertexPosition.z});
+        //     _normals.push_back({0, 1, 0});
+        //     _colors.push_back(Color(0, 0, 0, 0));
+        //     _edgeIndices[grid_position] = (vertexIndex);
+        // }
+    }
+    // godot::String ringNodes = "";
+    // for (auto& [position, vertexId]: _ringEdgeNodes)
+    // {
+    //     ringNodes += Utils::to_string(position) + ", ";
+    // }
+    // godot::String innerNodes = "";
+    // for (auto& [position, vertexId]: _innerEdgeNodes)
+    // {
+    //     innerNodes += Utils::to_string(position) + ", ";
+    // }
+    // UtilityFunctions::print("Ring Nodes: " + ringNodes);
+    // UtilityFunctions::print("Inner Nodes: " + innerNodes);
+
+    for (size_t node_id = 0; node_id < _meshChunk.innerNodeCount; node_id++)
     {
         if (_meshChunk.vertexIndices[node_id] <= -1)
             continue;
 
-        const int faces = 3;
         auto pos = _meshChunk.positions[node_id];
         auto faceDirs = _meshChunk.faceDirs[node_id];
+        static const int faces = 3;
         for (int i = 0; i < faces; i++)
         {
             int flipFace = ((faceDirs >> (2 * i)) & 3) - 1;
@@ -133,7 +158,6 @@ ChunkMeshData *StitchedSurfaceNets::generate_mesh_data(const JarVoxelTerrain &te
             if (_meshChunk.get_unique_neighbouring_vertices(pos, StitchedMeshChunk::FaceOffsets[i], neighbours) &&
                 neighbours.size() == 4)
             {
-
                 int n0 = _meshChunk.vertexIndices[neighbours[0]];
                 int n1 = _meshChunk.vertexIndices[neighbours[1]];
                 int n2 = _meshChunk.vertexIndices[neighbours[2]];
@@ -152,18 +176,66 @@ ChunkMeshData *StitchedSurfaceNets::generate_mesh_data(const JarVoxelTerrain &te
         }
     }
 
-    if (_indices.size() == 0)
-    {
-        // UtilityFunctions::printerr("No indices!");
+    if (_indices.size() == 0)    
         return nullptr;
+    
+
+    if (_meshChunk.is_edge_chunk())
+    {
+        // go through inner node edges, then if some inner node edge in +x/y/z exists, attempt to find a ring vertices
+        // around this. make triangle/quad depending on what you find
+        for (auto &[pos, node_id] : _innerEdgeNodes)
+        {
+            static const int faces = 3;
+            static const glm::ivec3 offsets[3] = {glm::ivec3(1, 0, 0), glm::ivec3(0, 1, 0), glm::ivec3(0, 0, 1)};
+            auto faceDirs = _meshChunk.faceDirs[node_id];
+            for (int i = 0; i < faces; i++)
+            {
+                auto it = _innerEdgeNodes.find(pos + offsets[i]);
+                if (it == _innerEdgeNodes.end() || it->second < 0)
+                    continue;
+                int innerNeighbour = it->second;
+
+                // some function to find ring vertices
+                std::vector<std::vector<int>> neighboursLists = find_ring_nodes(pos, i);
+                int n0 = _meshChunk.vertexIndices[node_id];
+                int n1 = _meshChunk.vertexIndices[innerNeighbour];
+                for (auto &neighbours : neighboursLists)
+                {
+                    std::vector<int> allNodes = {n1};
+                    allNodes.insert(allNodes.end(), neighbours.begin(), neighbours.end());
+                    int minNode = n0;
+                    for (int n : allNodes)
+                    {
+                        if (glm::any(glm::lessThan(_meshChunk.nodes[n]->_center, _meshChunk.nodes[minNode]->_center)))
+                            minNode = n;
+                    }
+
+                    if (neighbours.size() == 2)
+                    {
+                        int n2 = _meshChunk.vertexIndices[neighbours[0]];
+                        int n3 = _meshChunk.vertexIndices[neighbours[1]];
+                        if (_verts[n0].distance_squared_to(_verts[n3]) < _verts[n1].distance_squared_to(_verts[n2]))
+                        {
+                            add_tri_fix_normal(n0, n1, n3);
+                            add_tri_fix_normal(n0, n3, n2);
+                        }
+                        else
+                        {
+                            add_tri_fix_normal(n1, n3, n2);
+                            add_tri_fix_normal(n1, n2, n0);
+                        }
+                    }
+                    else if (neighbours.size() == 1)
+                    {
+                        int n2 = _meshChunk.vertexIndices[neighbours[0]];
+                        add_tri_fix_normal(n0, n1, n2);
+                    }
+                }
+            }
+        }
     }
 
-    // for (size_t vert_id = 0; vert_id < _normals.size(); vert_id++)
-    // {
-    //     _normals[vert_id] = _normals[vert_id].normalized();
-    // }
-
-    // Assign arrays to mesh data
     Array meshData;
     meshData.resize(Mesh::ARRAY_MAX);
     meshData[Mesh::ARRAY_VERTEX] = _verts;
@@ -173,8 +245,56 @@ ChunkMeshData *StitchedSurfaceNets::generate_mesh_data(const JarVoxelTerrain &te
 
     ChunkMeshData *output =
         new ChunkMeshData(meshData, _chunk->LoD, _meshChunk.is_edge_chunk(), _chunk->get_bounds(terrain._octreeScale));
-    output->edgeIndices = _edgeIndices;
+    output->h2l_boundaries = _meshChunk._lodH2LBoundaries;
+    output->edgeVertices = _ringEdgeNodes;
+    output->edgeVertices.insert(_innerEdgeNodes.begin(), _innerEdgeNodes.end());
+    for (auto &[pos, node_id] : output->edgeVertices)
+    {
+        output->edgeVertices[pos] = _meshChunk.vertexIndices[node_id];
+    }
+
     return output;
+}
+
+std::vector<std::vector<int>> StitchedSurfaceNets::find_ring_nodes(const glm::ivec3 &pos, const int face) const
+{
+    static const glm::ivec3 face_offsets[3] = {glm::ivec3(1, 0, 0), glm::ivec3(0, 1, 0), glm::ivec3(0, 0, 1)};
+    static const glm::ivec3 ring_offsets[3][4] = {
+        {glm::ivec3(0, 1, 0), glm::ivec3(0, -1, 0), glm::ivec3(0, 0, 1), glm::ivec3(0, 0, -1)},
+        {glm::ivec3(1, 0, 0), glm::ivec3(-1, 0, 0), glm::ivec3(0, 0, 1), glm::ivec3(0, 0, -1)},
+        {glm::ivec3(1, 0, 0), glm::ivec3(-1, 0, 0), glm::ivec3(0, 1, 0), glm::ivec3(0, -1, 0)}};
+    // function to go from inner coordinates to ring coordinates
+    auto get_ring_node = [this](const glm::ivec3 pos) {
+        glm::ivec3 ring_pos = glm::floor(glm::vec3(pos) / 2.0f);
+
+        auto it = _ringEdgeNodes.find(ring_pos);
+        if (it == _ringEdgeNodes.end() || it->second < 0 || _meshChunk.vertexIndices[it->second] < 0)
+            return -1;
+
+        return it->second;
+    };
+
+    std::vector<std::vector<int>> result;
+
+    for (auto dir : ring_offsets[face])
+    {
+        int n0 = get_ring_node(pos + dir);
+        int n1 = get_ring_node(pos + dir + face_offsets[face]);
+
+        if (n0 >= 0 && n1 >= 0)
+            result.push_back({n0, n1});
+        else if (n0 >= 0)
+            result.push_back({n0});
+        else if (n1 >= 0)
+            result.push_back({n1});
+    }
+    return result;
+}
+//I'd rather not base the winding order on the normal, but it works for now.
+inline void StitchedSurfaceNets::add_tri_fix_normal(int n0, int n1, int n2)
+{
+    godot::Vector3 normal = (_verts[n1] - _verts[n0]).cross(_verts[n2] - _verts[n0]);
+    add_tri(n0, n1, n2, normal.dot(_normals[n0]) > 0);
 }
 
 inline void StitchedSurfaceNets::add_tri(int n0, int n1, int n2, bool flip)

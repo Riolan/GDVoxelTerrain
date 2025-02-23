@@ -33,8 +33,6 @@ public:
 
     inline bool is_chunk(const JarVoxelTerrain &terrain) const;
     inline bool is_one_above_chunk(const JarVoxelTerrain &terrain) const;
-    inline bool is_not_edge_chunk(const JarVoxelTerrain &terrain) const;
-
     void populateUniqueLoDValues(std::vector<int>& lodValues) const;
 
     bool is_enqueued() const;
@@ -42,7 +40,9 @@ public:
     bool is_any_children_enqueued() const;
 
     inline bool should_delete_chunk(const JarVoxelTerrain &terrain) const;
-public:
+    uint16_t compute_boundaries(const JarVoxelTerrain &terrain) const;
+
+  public:
     VoxelOctreeNode(int size);
     VoxelOctreeNode(VoxelOctreeNode* parent, const glm::vec3 center, int size);
 
@@ -59,11 +59,13 @@ public:
     void get_voxel_leaves_in_bounds(const JarVoxelTerrain &terrain, const Bounds& Bounds, std::vector<VoxelOctreeNode*>& result);
     void get_voxel_leaves_in_bounds(const JarVoxelTerrain &terrain, const Bounds& Bounds, const int LOD, std::vector<VoxelOctreeNode*>& result);
 
-// private:
+    void get_voxel_leaves_in_bounds_excluding_bounds(const JarVoxelTerrain &terrain, const Bounds &including_bounds,
+                                                     const Bounds &excluding_bounds, const int LOD,
+                                                     std::vector<VoxelOctreeNode *> &result);
 
+    // private:
 
-
-protected:
+  protected:
     inline virtual std::unique_ptr<VoxelOctreeNode> create_child_node(const glm::vec3& center, int size) override;
 };
 

@@ -2,11 +2,31 @@
 #include "jar_voxel_terrain.h"
 #include "utils.h"
 
+#define LEAF_COUNT 16.0f
+
 const std::vector<glm::ivec3> StitchedMeshChunk::Offsets = {
     glm::ivec3(0, 0, 0), glm::ivec3(1, 0, 0), glm::ivec3(0, 1, 0), glm::ivec3(1, 1, 0),
     glm::ivec3(0, 0, 1), glm::ivec3(1, 0, 1), glm::ivec3(0, 1, 1), glm::ivec3(1, 1, 1)};
 
-const std::vector<glm::vec3> StitchedMeshChunk::checkLodOffsets = {glm::vec3(1, 0, 0), glm::vec3(-1, 0, 0),
+const std::vector<Bounds> StitchedMeshChunk::RingBounds = {
+    Bounds(glm::vec3(0, -0.5f, -0.5f) + glm::vec3(-2 / LEAF_COUNT),
+           glm::vec3(0, 0.5f, 0.5f) + glm::vec3(2 / LEAF_COUNT)), // x
+    Bounds(glm::vec3(-0.5f, 0, -0.5f) + glm::vec3(-2 / LEAF_COUNT),
+           glm::vec3(0.5f, 0, 0.5f) + glm::vec3(2 / LEAF_COUNT)), // y
+    Bounds(glm::vec3(-0.5f, -0.5f, 0) + glm::vec3(-2 / LEAF_COUNT),
+           glm::vec3(0.5f, 0.5f, 0) + glm::vec3(2 / LEAF_COUNT)), // z
+};
+
+const std::vector<glm::ivec4> StitchedMeshChunk::RingQuadChecks = {
+    glm::ivec4(1, 5, 3, 7), // positive x
+    glm::ivec4(0, 2, 4, 6), // negative x
+    glm::ivec4(2, 3, 6, 7), // positive y
+    glm::ivec4(0, 1, 4, 5), // negative y
+    glm::ivec4(4, 5, 6, 7), // positive z
+    glm::ivec4(0, 1, 2, 3)  // negative z
+};
+
+const std::vector<glm::vec3> StitchedMeshChunk::CheckLodOffsets = {glm::vec3(1, 0, 0), glm::vec3(-1, 0, 0),
                                                                    glm::vec3(0, 1, 0), glm::vec3(0, -1, 0),
                                                                    glm::vec3(0, 0, 1), glm::vec3(0, 0, -1)};
 
@@ -27,12 +47,14 @@ const std::vector<std::vector<glm::ivec3>> StitchedMeshChunk::FaceOffsets = {YzO
 
 StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chunk)
 {
+    // if(chunk.LoD > 0 ) return;
     glm::vec3 chunkCenter = chunk._center;
     auto cameraPosition = terrain.get_lod()->get_camera_position();
     float leafSize = ((1 << chunk.LoD) * terrain.get_octree_scale());
     Bounds bounds = chunk.get_bounds(terrain._octreeScale).expanded(leafSize - 0.001f);
     nodes.clear();
     terrain._voxelRoot->get_voxel_leaves_in_bounds(terrain, bounds, chunk.LoD, nodes);
+    innerNodeCount = nodes.size();
     bounds = bounds.expanded(0.001f);
 
     if (nodes.empty())
@@ -41,18 +63,12 @@ StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const Voxel
     // find if there are any lod boundaries
     const float edge_length = chunk.edge_length(terrain.get_octree_scale());
     _lodL2HBoundaries = _lodH2LBoundaries = 0;
-    for (size_t i = 0; i < checkLodOffsets.size(); i++)
+    for (size_t i = 0; i < CheckLodOffsets.size(); i++)
     {
-        int lod = terrain.get_lod()->lod_at(chunk._center + edge_length * checkLodOffsets[i]);
+        int lod = terrain.get_lod()->lod_at(chunk._center + edge_length * CheckLodOffsets[i]);
         _lodL2HBoundaries |= (chunk.LoD > lod ? 1 : 0) << i;
         _lodH2LBoundaries |= (chunk.LoD < lod ? 1 : 0) << i;
     }
-
-    float maxChunkSize = (1 << chunk.LoD + 1);
-    float normalizingFactor = 1.0f / leafSize;
-    half_leaf_size = glm::vec3(leafSize * 0.5);
-    glm::vec3 minPos = bounds.min;
-    glm::ivec3 clampMax = glm::ivec3(LargestPos);
 
     positions.clear();
     vertexIndices.clear();
@@ -62,40 +78,97 @@ StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const Voxel
     vertexIndices.resize(nodes.size(), -2);
     faceDirs.resize(nodes.size(), 0);
     _leavesLut.resize(ChunkRes * ChunkRes * ChunkRes, 0);
-
-    for (size_t i = 0; i < nodes.size(); i++)
     {
-        VoxelOctreeNode *node = nodes[i];
-        Bounds b = node->get_bounds(terrain._octreeScale);
+        float normalizingFactor = 1.0f / leafSize;
+        half_leaf_size = glm::vec3(leafSize * 0.5);
+        glm::vec3 minPos = bounds.min;
+        glm::ivec3 clampMax = glm::ivec3(LargestPos);
 
-        if (node->LoD < 0 || node->_size > maxChunkSize || !b.intersects(bounds))
-            continue;
-
-        auto overlap = bounds.intersected(b);
-        glm::vec3 min = (overlap.min - minPos) * normalizingFactor;
-        glm::vec3 max = (overlap.max - minPos) * normalizingFactor;
-        glm::ivec3 intMin = glm::clamp((glm::ivec3)glm::floor(min), glm::ivec3(0.0f), clampMax);
-        glm::ivec3 intMax = glm::clamp((glm::ivec3)glm::ceil(max) - glm::ivec3(1.0f), glm::ivec3(0.0f), clampMax);
-
-        glm::ivec3 pos = intMax;
-        positions[i] = pos;
-
-        bool isSmall = intMax == intMin;
-        if (!isSmall || is_on_boundary(_lodH2LBoundaries, pos))
-            continue;
-
-        vertexIndices[i] = -1;
-
-        if (isSmall)
+        for (size_t i = 0; i < nodes.size(); i++)
         {
-            _leavesLut[intMax.x + ChunkRes * (intMax.y + ChunkRes * intMax.z)] = i + 1;
+            VoxelOctreeNode *node = nodes[i];
+            glm::ivec3 pos = (glm::ivec3)glm::ceil((node->_center - minPos) * normalizingFactor) - glm::ivec3(1.0f);
+            pos = glm::clamp(pos, glm::ivec3(0.0f), clampMax);
+
+            // if (is_on_boundary(_lodH2LBoundaries, pos))
+            //     continue;
+
+            positions[i] = pos;
+            vertexIndices[i] = -1;
+            _leavesLut[pos.x + ChunkRes * (pos.y + ChunkRes * pos.z)] = i + 1;
         }
+    }
+
+    if (_lodH2LBoundaries != 0)
+    {
+        float normalizingFactor = 0.5f / leafSize;
+
+        // rejection_bounds = inner radius
+        // acception_bounds = union of the 6 rings, should capture 8x8x2 nodes per side
+        Bounds acceptance_bounds;
+        Bounds rejection_bounds = chunk.get_bounds(terrain._octreeScale);
+        for (size_t i = 0; i < CheckLodOffsets.size(); i++)
+        {
+            if (((_lodH2LBoundaries >> i) & 0b1) != 1)
+                continue;
+            glm::vec3 edge = (edge_length * 0.5f) * CheckLodOffsets[i];
+            Bounds b = (RingBounds[i / 2] * edge_length) + (chunkCenter + edge);
+            acceptance_bounds = acceptance_bounds.joined(b);
+
+            glm::vec3 difference = (edge_length * 2.0f / LEAF_COUNT) * glm::abs(CheckLodOffsets[i]);
+            if (i % 2 == 0)
+                rejection_bounds.max -= difference;
+            else
+                rejection_bounds.min += difference;
+
+            // UtilityFunctions::print("b: " + Utils::to_string(b.get_size() * normalizingFactor));
+        }
+
+        // UtilityFunctions::print("ab: " + Utils::to_string(acceptance_bounds) + ", rb: " +
+        // Utils::to_string(rejection_bounds));
+        // UtilityFunctions::print("ab: " + Utils::to_string(acceptance_bounds.get_size() * normalizingFactor) +
+        //                         ", rb: " + Utils::to_string(rejection_bounds.get_size() * normalizingFactor));
+
+        acceptance_bounds = acceptance_bounds.expanded(-0.001f); 
+        rejection_bounds = rejection_bounds.expanded(-0.001f);
+        terrain._voxelRoot->get_voxel_leaves_in_bounds_excluding_bounds(terrain, acceptance_bounds, rejection_bounds,
+                                                                        chunk.LoD + 1, nodes);
+        ringNodeCount = nodes.size() - innerNodeCount;
+        // UtilityFunctions::print(ringNodeCount);
+        if (ringNodeCount <= 0)
+            return;
+        //should be based on full ring mode, i.e. -5 to 5 nodes
+        glm::vec3 minPos = chunkCenter - 10 / LEAF_COUNT * edge_length;
+        glm::ivec3 clampMax = glm::ivec3(9);
+        glm::vec3 minRecPos = glm::vec3(3875439875983);
+        glm::vec3 maxRecPos = glm::vec3(-3875439875983);
+
+        for (size_t i = innerNodeCount; i < nodes.size(); i++)
+        {
+            VoxelOctreeNode *node = nodes[i];
+            glm::ivec3 pos = (glm::ivec3)glm::ceil((node->_center - minPos) * normalizingFactor) - glm::ivec3(1.0f);
+            
+            minRecPos = glm::min(minRecPos, glm::vec3(pos));
+            maxRecPos = glm::max(maxRecPos, glm::vec3(pos));
+
+            pos = glm::clamp(pos, glm::ivec3(0.0f), clampMax);
+
+            positions.push_back(pos);
+            vertexIndices.push_back(-1);
+            faceDirs.push_back(0);
+            _ringLut[pos] = i;
+        }
+
+        // UtilityFunctions::print("min: " + Utils::to_string(minRecPos) + "max: " + Utils::to_string(maxRecPos));
     }
 }
 
 bool StitchedMeshChunk::should_have_quad(const glm::ivec3 &position, const int face) const
 {
-    //we might also need some cases for l2h chunks i think
+    // we might also need some cases for l2h chunks i think
+    return true;
+    if (_lodL2HBoundaries != 0)
+        return true;
     switch (face)
     {
     case 0:
@@ -145,4 +218,46 @@ bool StitchedMeshChunk::get_neighbours(const glm::ivec3 &pos, std::vector<int> &
         result.push_back(n);
     }
     return true;
+}
+
+bool StitchedMeshChunk::get_ring_neighbours(const glm::ivec3 &pos, std::vector<int> &result) const
+{
+    for (const auto &o : StitchedMeshChunk::Offsets)
+    {
+        auto it = _ringLut.find(pos + o); // Use find method
+        if (it == _ringLut.end() || it->second < 0)
+        {
+            return false; // Value does not exist or is invalid
+        }
+        result.push_back(it->second);
+    }
+    return true;
+}
+
+// make sure that the sign of the 4 vertices closest the boundary is not the same
+bool StitchedMeshChunk::should_have_boundary_quad(const std::vector<int> &neighbours, const bool on_ring) const
+{
+    // if on ring, we check the other side. if not on ring, we check outward of the chunk
+    for (size_t i = 0; i < CheckLodOffsets.size(); i++)
+    {
+        if (((_lodH2LBoundaries >> i) & 0b1) != 1) //this should also check where this node resides.
+            continue;
+        int j = i;
+        if (on_ring) //swap the direction we look into
+        {
+            if (j % 2 == 0)
+                j++;
+            else 
+                j--;
+        }
+
+        glm::ivec4 nx = RingQuadChecks[j]; // get the right set of neighbours to consider
+        int sign0 = glm::sign(nodes[neighbours[nx.x]]->get_value()),
+            sign1 = glm::sign(nodes[neighbours[nx.y]]->get_value()),
+            sign2 = glm::sign(nodes[neighbours[nx.z]]->get_value()),
+            sign3 = glm::sign(nodes[neighbours[nx.w]]->get_value());
+        if (sign0 != sign1 || sign1 != sign2 || sign2 != sign3)
+            return true;
+    }
+    return false;
 }

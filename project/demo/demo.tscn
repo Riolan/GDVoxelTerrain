@@ -9,6 +9,7 @@
 automatic_update_distance = 64.0
 min_lod_distance = 128.0
 lod_level_count = 14
+automatic_update = true
 resource_local_to_scene = true
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_awrh7"]
@@ -71,3 +72,4 @@ continuous_cd = true
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 0, 3.92238, 0)
+shadow_enabled = true

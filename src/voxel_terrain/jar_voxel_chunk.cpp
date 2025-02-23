@@ -55,6 +55,16 @@ void JarVoxelChunk::set_lod(int p_lod)
     lod = p_lod;
 }
 
+uint8_t JarVoxelChunk::get_h2l_boundaries() const
+{
+    return h2l_boundaries;
+}
+
+void JarVoxelChunk::set_h2l_boundaries(uint8_t p_h2lboundaries)
+{
+    h2l_boundaries = p_h2lboundaries;
+}
+
 bool JarVoxelChunk::is_edge_chunk() const
 {
     return edge_chunk;
@@ -139,6 +149,7 @@ void JarVoxelChunk::update_chunk(const ChunkMeshData &chunk_mesh_data)
     concave_polygon_shape = Ref<ConcavePolygonShape3D>(Object::cast_to<ConcavePolygonShape3D>(*collision_shape->get_shape()));
     material = Ref<ShaderMaterial>(Object::cast_to<ShaderMaterial>(*mesh_instance->get_material_override()));
     lod = chunk_mesh_data.lod;
+    h2l_boundaries = chunk_mesh_data.h2l_boundaries;
     edge_chunk = chunk_mesh_data.edge_chunk;
     auto old_bounds = bounds;
     bounds = chunk_mesh_data.bounds;
@@ -159,24 +170,24 @@ void JarVoxelChunk::update_chunk(const ChunkMeshData &chunk_mesh_data)
         concave_polygon_shape->set_faces(chunk_mesh_data.create_collision_mesh());
     }
 
-    Ref<StandardMaterial3D> stitch_material;
-    stitch_material.instantiate();
-    stitch_material->set_albedo(Color(1, 0, 1));
-    Ref<SphereMesh> sphere_mesh;
-    sphere_mesh.instantiate();
-    sphere_mesh->set_radius(0.4f);
-    sphere_mesh->set_height(0.8f);
-    PackedVector3Array verts = chunk_mesh_data.mesh_array[Mesh::ARRAY_VERTEX];
-    //stitching
-    for (auto& [position, vertexId]: chunk_mesh_data.edgeIndices) 
-    {  
-        Vector3 nodeCenter = verts[vertexId];
-        MeshInstance3D *sphereInstance = memnew(MeshInstance3D);
-        add_child(sphereInstance);
-        sphereInstance->set_mesh(sphere_mesh);
-        sphereInstance->set_position(nodeCenter);
-        sphereInstance->set_material_override(stitch_material);
-    }
+    // Ref<StandardMaterial3D> stitch_material;
+    // stitch_material.instantiate();
+    // stitch_material->set_albedo(Color(1, 0, 1));
+    // Ref<SphereMesh> sphere_mesh;
+    // sphere_mesh.instantiate();
+    // sphere_mesh->set_radius(0.4f);
+    // sphere_mesh->set_height(0.8f);
+    // PackedVector3Array verts = chunk_mesh_data.mesh_array[Mesh::ARRAY_VERTEX];
+    // display all vertices: 
+    // for (auto& [position, vertexId]: chunk_mesh_data.edgeVertices) 
+    // {  
+    //     Vector3 nodeCenter = verts[vertexId];
+    //     MeshInstance3D *sphereInstance = memnew(MeshInstance3D);
+    //     add_child(sphereInstance);
+    //     sphereInstance->set_mesh(sphere_mesh);
+    //     sphereInstance->set_position(nodeCenter);
+    //     sphereInstance->set_material_override(stitch_material);
+    // }
 }
 
 void JarVoxelChunk::update_collision_mesh()

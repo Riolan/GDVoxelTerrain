@@ -27,17 +27,19 @@ class StitchedSurfaceNets
     PackedColorArray _colors;
     PackedInt32Array _indices;
     std::vector<bool> _badNormals;
-    std::unordered_map<glm::ivec3, int> _edgeIndices;
+    std::unordered_map<glm::ivec3, int> _innerEdgeNodes;
+    std::unordered_map<glm::ivec3, int> _ringEdgeNodes;
 
     const VoxelOctreeNode *_chunk;
     StitchedMeshChunk _meshChunk;
-    glm::vec3 _tempPoints[12];
 
     inline void add_tri(int n0, int n1, int n2, bool flip);
+    inline void add_tri_fix_normal(int n0, int n1, int n2);
+    void create_vertex(const int node_id, const std::vector<int> &neighbours, const bool on_ring);
+    std::vector<std::vector<int>> find_ring_nodes(const glm::ivec3 &pos, const int face) const;    
 
   public:
     StitchedSurfaceNets(const JarVoxelTerrain &terrain, const ScheduledChunk &chunk);
-
     ChunkMeshData *generate_mesh_data(const JarVoxelTerrain &terrain);
 };
 

@@ -70,9 +70,10 @@ class Utils : public Object
         return godot::String(("{" + glm::to_string(bounds.min) + ", " + glm::to_string(bounds.max) + "}").c_str());
     }
 
-    static godot::String to_string(const glm::vec3 &vec)
+    template<class matType>
+    static godot::String to_string(const matType &v)
     {
-        return godot::String(("{" + glm::to_string(vec) + "}").c_str());
+        return godot::String(("{" + glm::to_string(v) + "}").c_str());
     }
 };
 

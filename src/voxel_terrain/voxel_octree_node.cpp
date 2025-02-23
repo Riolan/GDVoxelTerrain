@@ -79,17 +79,6 @@ inline bool VoxelOctreeNode::is_one_above_chunk(const JarVoxelTerrain &terrain) 
     return _size == (LoD + terrain.get_min_chunk_size() + 1);
 }
 
-inline bool VoxelOctreeNode::is_not_edge_chunk(const JarVoxelTerrain &terrain) const
-{
-    // return true;
-    auto e = edge_length(terrain.get_octree_scale());
-    return LoD <= terrain.get_lod()->lod_at(_center + glm::vec3(e, 0, 0)) &&
-           LoD <= terrain.get_lod()->lod_at(_center - glm::vec3(e, 0, 0)) &&
-           LoD <= terrain.get_lod()->lod_at(_center + glm::vec3(0, e, 0)) &&
-           LoD <= terrain.get_lod()->lod_at(_center - glm::vec3(0, e, 0)) &&
-           LoD <= terrain.get_lod()->lod_at(_center + glm::vec3(0, 0, e)) &&
-           LoD <= terrain.get_lod()->lod_at(_center - glm::vec3(0, 0, e));
-}
 
 void VoxelOctreeNode::populateUniqueLoDValues(std::vector<int> &lodValues) const
 {
@@ -132,6 +121,21 @@ inline bool VoxelOctreeNode::should_delete_chunk(const JarVoxelTerrain &terrain)
     return false;
 }
 
+inline uint16_t VoxelOctreeNode::compute_boundaries(const JarVoxelTerrain &terrain) const {
+    static const std::vector<glm::vec3> offsets = {glm::vec3(1, 0, 0), glm::vec3(-1, 0, 0),
+        glm::vec3(0, 1, 0), glm::vec3(0, -1, 0),
+        glm::vec3(0, 0, 1), glm::vec3(0, 0, -1)};
+
+    uint16_t boundaries = 0;
+    float el = edge_length(terrain.get_octree_scale());
+    for (size_t i = 0; i < offsets.size(); i++)
+    {
+        int lod = terrain.get_lod()->lod_at(_center + el * offsets[i]);
+        boundaries |= (LoD < lod ? 1 : 0) << i; //high to low
+        boundaries |= (LoD > lod ? 1 : 0) << (i + 8); //low to high
+    }
+}
+
 void VoxelOctreeNode::build(JarVoxelTerrain &terrain)
 {
     LoD = terrain.get_lod()->desired_lod(*this);
@@ -156,10 +160,11 @@ void VoxelOctreeNode::build(JarVoxelTerrain &terrain)
     }
 
     if (!is_leaf() && !(is_chunk(terrain) && (_chunk != nullptr || is_enqueued())))
-        for (auto &child : *_children)        
+        for (auto &child : *_children)
             child->build(terrain);
 
-    if (is_chunk(terrain) && !is_leaf() && (_chunk == nullptr || _chunk->is_edge_chunk() && !is_not_edge_chunk(terrain)))
+    if (is_chunk(terrain) && !is_leaf() &&
+        (_chunk == nullptr || (_chunk->is_edge_chunk() &&  _chunk->get_h2l_boundaries() != (0xFF & compute_boundaries(terrain)))))
         queue_update(terrain);
 }
 
@@ -268,7 +273,7 @@ void VoxelOctreeNode::get_voxel_leaves_in_bounds(const JarVoxelTerrain &terrain,
     }
 
     if (is_chunk(terrain))
-        for (auto &child : *_children)//use all the same LoD from here on out
+        for (auto &child : *_children) // use all the same LoD from here on out
             child->get_voxel_leaves_in_bounds(terrain, bounds, LoD, result);
     else
         for (auto &child : *_children)
@@ -278,10 +283,10 @@ void VoxelOctreeNode::get_voxel_leaves_in_bounds(const JarVoxelTerrain &terrain,
 void VoxelOctreeNode::get_voxel_leaves_in_bounds(const JarVoxelTerrain &terrain, const Bounds &bounds, const int LOD,
                                                  std::vector<VoxelOctreeNode *> &result)
 {
-    if (!get_bounds(terrain._octreeScale).intersects(bounds))
+    if (!get_bounds(terrain._octreeScale).intersects(bounds) || (is_leaf() && _size > LOD))
         return;
 
-    if (_size == LOD || (is_leaf() && _size >= LOD))
+    if (_size == LOD)
     {
         result.push_back(this);
         return;
@@ -289,6 +294,26 @@ void VoxelOctreeNode::get_voxel_leaves_in_bounds(const JarVoxelTerrain &terrain,
 
     for (auto &child : *_children)
         child->get_voxel_leaves_in_bounds(terrain, bounds, LOD, result);
+}
+
+void VoxelOctreeNode::get_voxel_leaves_in_bounds_excluding_bounds(const JarVoxelTerrain &terrain,
+                                                                  const Bounds &acceptance_bounds,
+                                                                  const Bounds &rejection_bounds, const int LOD,
+                                                                  std::vector<VoxelOctreeNode *> &result)
+{
+    auto bounds = get_bounds(terrain._octreeScale);
+    if (!acceptance_bounds.intersects(bounds) || (is_leaf() && _size > LOD))
+        return;
+
+    if (_size == LOD)
+    {
+        if (!rejection_bounds.intersects(bounds))
+            result.push_back(this);
+        return;
+    }
+
+    for (auto &child : *_children)
+        child->get_voxel_leaves_in_bounds_excluding_bounds(terrain, acceptance_bounds, rejection_bounds, LOD, result);
 }
 
 inline std::unique_ptr<VoxelOctreeNode> VoxelOctreeNode::create_child_node(const glm::vec3 &center, int size)

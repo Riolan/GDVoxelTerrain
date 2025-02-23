@@ -41,6 +41,7 @@ void MeshComputeScheduler::process_queue(JarVoxelTerrain &terrain)
         if (_activeTasks >= _maxConcurrentTasks)
             return;
         ScheduledChunk *chunk;
+        
         if (ChunksToAdd.try_pop(chunk))
         {
             _activeTasks++;
@@ -54,7 +55,9 @@ void MeshComputeScheduler::process_queue(JarVoxelTerrain &terrain)
 void MeshComputeScheduler::run_task(const JarVoxelTerrain &terrain, ScheduledChunk &chunk)
 {
     std::thread([this, &terrain, &chunk]() {
-        int triCount = 0;
+        // if(StitchedSurfaceNets::STOPPIT) return;
+
+        // int triCount = 0;
 
         auto meshCompute = StitchedSurfaceNets(terrain, chunk);
         // auto meshCompute = AdaptiveSurfaceNets(terrain, chunk);

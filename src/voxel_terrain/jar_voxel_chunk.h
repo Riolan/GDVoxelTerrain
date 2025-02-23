@@ -19,6 +19,7 @@ class JarVoxelChunk : public Node3D
 
   private:
     int lod = 0;
+    uint8_t h2l_boundaries = 0;
     bool edge_chunk = false;
     Bounds bounds;
 
@@ -45,6 +46,9 @@ class JarVoxelChunk : public Node3D
 
     int get_lod() const;
     void set_lod(int p_lod);
+
+    uint8_t get_h2l_boundaries() const;
+    void set_h2l_boundaries(uint8_t p_h2lboundaries);
 
     bool is_edge_chunk() const;
     void set_edge_chunk(bool p_edge_chunk);
