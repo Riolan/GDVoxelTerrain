@@ -96,7 +96,7 @@ bool JarVoxelLoD::update_camera_position(const JarVoxelTerrain &terrain, const b
     if (player == nullptr)
         return false;
 
-    auto p = player->get_global_transform().origin;
+    auto p = player->get_global_transform().origin - terrain.get_global_position();
     glm::vec3 glmp = {p.x, p.y, p.z};
 
     if (force || (glm::distance(_cameraPosition, glmp) > _automaticUpdateDistance))
@@ -119,9 +119,8 @@ inline float JarVoxelLoD::lod_to_grid_size(const int lod) const {
 }
 
 inline glm::vec3 JarVoxelLoD::snap_to_grid(const glm::vec3 pos, const float grid_size) const {
-    return floor(pos / grid_size + 0.5f) * grid_size;
+    return floor(pos / grid_size) * grid_size;
 }
-
 
 inline int JarVoxelLoD::lod_at(const glm::vec3 &position) const {
     glm::vec3 pos = position / 16.0f;
@@ -131,12 +130,38 @@ inline int JarVoxelLoD::lod_at(const glm::vec3 &position) const {
         glm::vec3 lod_cam_pos = snap_to_grid(cam_pos, grid_size);
         glm::vec3 delta = abs(pos - lod_cam_pos);
         float dist = glm::max(glm::max(delta.x, delta.y), delta.z);
-        if (dist < grid_size * (2.0f + 1/16.0f)) {
+        if (dist < grid_size * 2.0f) {
             return lod;
         }
     }
     return - 1; // Fallback to the largest LOD
 }
+
+// inline int JarVoxelLoD::lod_at(const glm::vec3 &position) const {
+//     glm::vec3 pos = position / 16.0f;
+//     glm::vec3 cam_pos = _cameraPosition / 16.0f;
+    
+//     int low = 0;
+//     int high = static_cast<int>(_lodLevels.size()) - 1;
+//     int answer = -1;
+    
+//     while (low <= high) {
+//         int mid = low + (high - low) / 2;
+//         float grid_size = lod_to_grid_size(mid);
+//         glm::vec3 lod_cam_pos = snap_to_grid(cam_pos, grid_size);
+//         glm::vec3 delta = glm::abs(pos - lod_cam_pos);
+//         float dist = glm::max(glm::max(delta.x, delta.y), delta.z);
+        
+//         if (dist < grid_size * 2.0f) {
+//             answer = mid;
+//             high = mid - 1; // Check for a smaller LOD
+//         } else {
+//             low = mid + 1; // Require a higher LOD
+//         }
+//     }
+    
+//     return answer != -1 ? answer : -1; // Fallback as per original code
+// }
 
 void JarVoxelLoD::_bind_methods()
 {

@@ -67,7 +67,8 @@ void JarVoxelTerrain::modify(const Ref<JarSignedDistanceField> sdf, const SDF::O
 
 void JarVoxelTerrain::sphere_edit(const Vector3 &position, const float radius, bool operation_union)
 {
-    glm::vec3 pos = glm::vec3(position.x, position.y, position.z);
+    auto global_position = position - get_global_position();
+    glm::vec3 pos = glm::vec3(global_position.x, global_position.y, global_position.z);
     auto operation =
         operation_union ? SDF::Operation::SDF_OPERATION_UNION : SDF::Operation::SDF_OPERATION_SUBTRACTION;
     Ref<JarSphereSdf> sdf;
@@ -222,8 +223,6 @@ void JarVoxelTerrain::initialize()
         UtilityFunctions::printerr("No sdf, please provide it.");
         return;
     }
-
-    UtilityFunctions::print("Start");
     _chunkSize = (1 << _minChunkSize);
     _voxelLod->init();
     _meshComputeScheduler = std::make_unique<MeshComputeScheduler>(12);
@@ -266,11 +265,13 @@ void JarVoxelTerrain::build()
     if (_isBuilding)
         return;
     std::thread([this]() {
+        // UtilityFunctions::print("start building");
         _isBuilding = true;
 
         //_meshComputeScheduler->clear_queue();
         _voxelRoot->build(*this);
         _isBuilding = false;
+        // UtilityFunctions::print("Stop Building");
     }).detach();
 
     // std::thread([this]() { _worldBiomes->update_texture(_levelOfDetail->get_camera_position()); }).detach();

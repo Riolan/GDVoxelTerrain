@@ -31,10 +31,8 @@ func _input(event) -> void:
 		move_speed *= 0.5;
 	move_speed = clamp(move_speed, MIN_MOVE_SPEED, MAX_MOVE_SPEED);
 		
-	#if event.is_action_pressed("left_click"):
-		#set_mouse(true);
-	#if event.is_action_released("left_click"): 
-		#set_mouse(false);
+	if event.is_action_pressed("ui_cancel"):
+		set_mouse(!rotating);
 	if event is InputEventMouseMotion and rotating:
 		rotation += Vector3(-event.relative.y * 0.0025, -event.relative.x * 0.0025, 0);
 		rotation.x = clamp(rotation.x, -PI/2.2, PI/2.2)

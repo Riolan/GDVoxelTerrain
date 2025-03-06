@@ -5,8 +5,9 @@
 #include "stitched_surface_nets/stitched_surface_nets.h"
 #include "voxel_octree_node.h"
 
+
 MeshComputeScheduler::MeshComputeScheduler(int maxConcurrentTasks)
-    : _maxConcurrentTasks(maxConcurrentTasks), _activeTasks(0), _totalTris(0), _prevTris(0)
+    : _maxConcurrentTasks(maxConcurrentTasks), _activeTasks(0), _totalTris(0), _prevTris(0), threadPool(maxConcurrentTasks)
 {
 }
 
@@ -38,13 +39,9 @@ void MeshComputeScheduler::process_queue(JarVoxelTerrain &terrain)
 {
     while (!ChunksToAdd.empty())
     {
-        if (_activeTasks >= _maxConcurrentTasks)
-            return;
-        ScheduledChunk *chunk;
-        
+        ScheduledChunk *chunk;        
         if (ChunksToAdd.try_pop(chunk))
         {
-            _activeTasks++;
             run_task(terrain, *chunk);
         }
         else
@@ -52,34 +49,20 @@ void MeshComputeScheduler::process_queue(JarVoxelTerrain &terrain)
     }
 }
 
-void MeshComputeScheduler::run_task(const JarVoxelTerrain &terrain, ScheduledChunk &chunk)
-{
-    std::thread([this, &terrain, &chunk]() {
-        // if(StitchedSurfaceNets::STOPPIT) return;
 
-        // int triCount = 0;
-
+void MeshComputeScheduler::run_task(const JarVoxelTerrain &terrain, ScheduledChunk &chunk) {
+    if(!chunk.node.is_chunk(terrain)) return;
+    threadPool.enqueue([this, &terrain, &chunk]() {
         auto meshCompute = StitchedSurfaceNets(terrain, chunk);
-        // auto meshCompute = AdaptiveSurfaceNets(terrain, chunk);
         ChunkMeshData *chunkMeshData = meshCompute.generate_mesh_data(terrain);
         ChunksToProcess.push(std::make_pair(&(chunk.node), chunkMeshData));
-
-        // if (chunkMeshData != nullptr)
-        // {
-        //     // if (JarVoxelTerrain::render_details())
-        //     // {
-        //     //     chunkMeshData->instantiate_details();
-        //     // }
-        //     ChunksToProcess.push(std::make_pair(&(chunk.node), chunkMeshData));
-        // } else {
-        //     UtilityFunctions::print("null mesh");
-        // }
         _activeTasks--;
-    }).detach();
+    });
 }
+
 
 void MeshComputeScheduler::clear_queue()
 {
-    ChunksToAdd.clear();
+    // ChunksToAdd.clear();
     // ChunksToProcess.clear();
 }

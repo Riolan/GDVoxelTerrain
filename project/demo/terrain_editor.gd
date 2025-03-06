@@ -23,6 +23,7 @@ func _edit(union : bool):
 	var result = space_state.intersect_ray(query)
 	if result:
 		#terrain.modify(sdf, )
+		#terrain.modify(sdf, 0, result.position, 10)
 	#OPERATION
 		terrain.sphere_edit(result.position, 10, union)
 		#terrain.spawn_debug_spheres_in_bounds(result.position, 16)

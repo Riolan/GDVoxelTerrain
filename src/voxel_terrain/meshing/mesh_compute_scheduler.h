@@ -9,6 +9,7 @@
 #include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/variant/vector3.hpp>
 #include <thread>
+#include "utility/thread_pool.h"
 
 using namespace godot;
 
@@ -38,6 +39,8 @@ class MeshComputeScheduler
 
     std::atomic<int> _activeTasks;
     int _maxConcurrentTasks;
+
+    ThreadPool threadPool;
 
     // Debug variables
     int _totalTris;
