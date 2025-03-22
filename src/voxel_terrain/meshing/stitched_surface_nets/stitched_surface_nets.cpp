@@ -14,7 +14,7 @@ StitchedSurfaceNets::StitchedSurfaceNets(const JarVoxelTerrain &terrain, const S
 void StitchedSurfaceNets::create_vertex(const int node_id, const std::vector<int> &neighbours, const bool on_ring)
 {
     glm::vec3 vertexPosition(0.0f);
-    Color color = Color(0, 0, 0, 0);
+    glm::vec4 color(0, 0, 0, 0);
     glm::vec3 normal(0.0f);
     int duplicates = 0, edge_crossings = 0;
     for (auto &edge : StitchedMeshChunk::Edges)
@@ -33,14 +33,10 @@ void StitchedSurfaceNets::create_vertex(const int node_id, const std::vector<int
         if (glm::sign(valueA) == glm::sign(valueB))
             continue;
 
-        // Color colorA = na->get_node_color();
-        // Color colorB = nb->get_node_color();
-
         float t = glm::abs(valueA) / (glm::abs(valueA) + glm::abs(valueB));
-        glm::vec3 point = glm::mix(posA, posB, t);
-        vertexPosition += point;
+        vertexPosition += glm::mix(posA, posB, t);
         edge_crossings++;
-        // color += color.linear_interpolate(colorA.linear_interpolate(colorB, t), 1.0f);
+        color += glm::mix(na->NodeColor, nb->NodeColor, t);
     }
 
     if (edge_crossings <= 0)
@@ -82,7 +78,7 @@ void StitchedSurfaceNets::create_vertex(const int node_id, const std::vector<int
     _meshChunk.vertexIndices[node_id] = vertexIndex;
     _verts.push_back({vertexPosition.x, vertexPosition.y, vertexPosition.z});
     _normals.push_back({normal.x, normal.y, normal.z});
-    _colors.push_back(color);
+    _colors.push_back({color.r, color.g, color.b, color.a});
 }
 
 ChunkMeshData *StitchedSurfaceNets::generate_mesh_data(const JarVoxelTerrain &terrain)
@@ -100,8 +96,7 @@ ChunkMeshData *StitchedSurfaceNets::generate_mesh_data(const JarVoxelTerrain &te
     }
 
     if (_verts.size() == 0)    
-        return nullptr;
-    
+        return nullptr;    
 
     // if on lod boundary, add an additional pass
     for (size_t node_id = _meshChunk.innerNodeCount; node_id < _meshChunk.innerNodeCount + _meshChunk.ringNodeCount;
@@ -244,7 +239,7 @@ ChunkMeshData *StitchedSurfaceNets::generate_mesh_data(const JarVoxelTerrain &te
     meshData[Mesh::ARRAY_INDEX] = _indices;
 
     ChunkMeshData *output =
-        new ChunkMeshData(meshData, _chunk->LoD, _meshChunk.is_edge_chunk(), _chunk->get_bounds(terrain._octreeScale));
+        new ChunkMeshData(meshData, _chunk->LoD, _meshChunk.is_edge_chunk(), _chunk->get_bounds(terrain.get_octree_scale()));
     output->h2l_boundaries = _meshChunk._lodH2LBoundaries;
     output->edgeVertices = _ringEdgeNodes;
     output->edgeVertices.insert(_innerEdgeNodes.begin(), _innerEdgeNodes.end());

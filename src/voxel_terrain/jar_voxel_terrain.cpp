@@ -22,11 +22,6 @@ void JarVoxelTerrain::_bind_methods()
     ClassDB::bind_method(D_METHOD("set_min_chunk_size", "value"), &JarVoxelTerrain::set_min_chunk_size);
     ADD_PROPERTY(PropertyInfo(Variant::INT, "min_chunk_size"), "set_min_chunk_size", "get_min_chunk_size");
 
-    ClassDB::bind_method(D_METHOD("get_lod"), &JarVoxelTerrain::get_lod);
-    ClassDB::bind_method(D_METHOD("set_lod", "lod"), &JarVoxelTerrain::set_lod);
-    ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "lod", PROPERTY_HINT_RESOURCE_TYPE, "JarVoxelLoD"), "set_lod",
-                 "get_lod");
-
     ClassDB::bind_method(D_METHOD("get_chunk_scene"), &JarVoxelTerrain::get_chunk_scene);
     ClassDB::bind_method(D_METHOD("set_chunk_scene", "value"), &JarVoxelTerrain::set_chunk_scene);
     ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "chunk_scene", PROPERTY_HINT_RESOURCE_TYPE, "PackedScene"),
@@ -36,6 +31,20 @@ void JarVoxelTerrain::_bind_methods()
     ClassDB::bind_method(D_METHOD("set_sdf", "sdf"), &JarVoxelTerrain::set_sdf);
     ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "sdf", PROPERTY_HINT_RESOURCE_TYPE, "JarSignedDistanceField"), "set_sdf",
                  "get_sdf");
+
+
+    ADD_GROUP("Level Of Detail", "lod_");
+    ClassDB::bind_method(D_METHOD("get_lod_level_count"), &JarVoxelTerrain::get_lod_level_count);
+    ClassDB::bind_method(D_METHOD("set_lod_level_count", "value"), &JarVoxelTerrain::set_lod_level_count);
+    ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_level_count"), "set_lod_level_count", "get_lod_level_count");
+
+    ClassDB::bind_method(D_METHOD("get_lod_automatic_update"), &JarVoxelTerrain::get_lod_automatic_update);
+    ClassDB::bind_method(D_METHOD("set_lod_automatic_update", "value"), &JarVoxelTerrain::set_lod_automatic_update);
+    ADD_PROPERTY(PropertyInfo(Variant::BOOL, "lod_automatic_update"), "set_lod_automatic_update", "get_lod_automatic_update");
+
+    ClassDB::bind_method(D_METHOD("get_lod_automatic_update_distance"), &JarVoxelTerrain::get_lod_automatic_update_distance);
+    ClassDB::bind_method(D_METHOD("set_lod_automatic_update_distance", "value"), &JarVoxelTerrain::set_lod_automatic_update_distance);
+    ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_automatic_update_distance"), "set_lod_automatic_update_distance", "get_lod_automatic_update_distance");
 
     BIND_ENUM_CONSTANT(SDF::SDF_OPERATION_UNION);
     BIND_ENUM_CONSTANT(SDF::SDF_OPERATION_SUBTRACTION);
@@ -104,15 +113,6 @@ bool JarVoxelTerrain::is_building() const
     return _isBuilding;
 }
 
-Ref<JarVoxelLoD> JarVoxelTerrain::get_lod() const
-{
-    return _voxelLod;
-}
-void JarVoxelTerrain::set_lod(const Ref<JarVoxelLoD> &lod)
-{
-    _voxelLod = lod;
-}
-
 Ref<JarSignedDistanceField> JarVoxelTerrain::get_sdf() const
 {
     return _sdf;
@@ -172,6 +172,37 @@ void JarVoxelTerrain::set_chunk_scene(const Ref<PackedScene> &value)
     _chunkScene = value;
 }
 
+// Getter and Setter implementations
+int JarVoxelTerrain::get_lod_level_count() const
+{
+    return lod_level_count;
+}
+
+void JarVoxelTerrain::set_lod_level_count(int value)
+{
+    lod_level_count = value;
+}
+
+bool JarVoxelTerrain::get_lod_automatic_update() const
+{
+    return lod_automatic_update;
+}
+
+void JarVoxelTerrain::set_lod_automatic_update(bool value)
+{
+    lod_automatic_update = value;
+}
+
+float JarVoxelTerrain::get_lod_automatic_update_distance() const
+{
+    return lod_automatic_update_distance;
+}
+
+void JarVoxelTerrain::set_lod_automatic_update_distance(float value)
+{
+    lod_automatic_update_distance = value;
+}
+
 void JarVoxelTerrain::_notification(int p_what)
 {
     if (godot::Engine::get_singleton()->is_editor_hint())
@@ -181,18 +212,11 @@ void JarVoxelTerrain::_notification(int p_what)
     switch (p_what)
     {
     case NOTIFICATION_ENTER_TREE: {
-        if (!Engine::get_singleton()->is_editor_hint())
-        {
-            set_process_internal(true);
-        }
-        else
-        {
-            set_process_internal(false);
-        }
+        initialize();    
+        set_process_internal(true);
         break;
     }
     case NOTIFICATION_READY: {
-        initialize();
         break;
     }
     case NOTIFICATION_EXIT_TREE: {
@@ -208,11 +232,6 @@ void JarVoxelTerrain::_notification(int p_what)
 
 void JarVoxelTerrain::initialize()
 {
-    if (_voxelLod.is_null())
-    {
-        UtilityFunctions::printerr("No LoD properties, please provide them.");
-        return;
-    }
     if (_chunkScene.is_null())
     {
         UtilityFunctions::printerr("No ChunkScene properties, please provide it.");
@@ -224,16 +243,17 @@ void JarVoxelTerrain::initialize()
         return;
     }
     _chunkSize = (1 << _minChunkSize);
-    _voxelLod->init();
+    _voxelLod = JarVoxelLoD(lod_automatic_update, lod_automatic_update_distance, lod_level_count);
     _meshComputeScheduler = std::make_unique<MeshComputeScheduler>(12);
     _voxelRoot = std::make_unique<VoxelOctreeNode>(_size);
     //_populationRoot = memnew(PopulationOctreeNode(_size));
     build();
 }
 
+
 void JarVoxelTerrain::process()
 {
-    if (_voxelLod->process(*this, 0.0))
+    if (_voxelLod.process(*this, false))
         build();
     _meshComputeScheduler->process(*this);
 
@@ -353,6 +373,17 @@ void JarVoxelTerrain::get_voxel_leaves_in_bounds(const Bounds &bounds, std::vect
     _voxelRoot->get_voxel_leaves_in_bounds(*this, bounds, nodes);
 }
 
+void JarVoxelTerrain::get_voxel_leaves_in_bounds(const Bounds &bounds, int lod, std::vector<VoxelOctreeNode *> &nodes) const
+{
+    _voxelRoot->get_voxel_leaves_in_bounds(*this, bounds, lod, nodes);
+}
+
+void JarVoxelTerrain::get_voxel_leaves_in_bounds_excluding_bounds(const Bounds &bounds, const Bounds &excludeBounds, int lod,
+                                                 std::vector<VoxelOctreeNode *> &nodes) const
+{
+    _voxelRoot->get_voxel_leaves_in_bounds_excluding_bounds(*this, bounds, excludeBounds, lod, nodes);
+}
+
 void JarVoxelTerrain::spawn_debug_spheres_in_bounds(const Vector3 &position, const float range)
 {
     std::vector<VoxelOctreeNode *> nodes;
@@ -383,4 +414,19 @@ void JarVoxelTerrain::spawn_debug_spheres_in_bounds(const Vector3 &position, con
         sphereInstance->set_position(nodeCenter);
         sphereInstance->set_material_override((n->_value > 0) ? green_material : red_material);
     }
+}
+
+glm::vec3 JarVoxelTerrain::get_camera_position() const
+{
+    return _voxelLod.get_camera_position();
+}
+
+int JarVoxelTerrain::desired_lod(const VoxelOctreeNode &node)
+{
+    return _voxelLod.desired_lod(node);
+}
+
+int JarVoxelTerrain::lod_at(const glm::vec3 &position) const
+{
+    return _voxelLod.lod_at(position);
 }

@@ -71,6 +71,7 @@ func _render_callback(p_effect_callback_type: EffectCallbackType, p_render_data:
 			for view in view_count:
 				# Get the RID for our color image, we will be reading from and writing to it.
 				var input_image: RID = render_scene_buffers.get_color_layer(view)
+				#var input_image: RID = render_scene_buffers.get_color_layer(view)
 
 				# Create a uniform set, this will be cached, the cache will be cleared if our viewports configuration is changed.
 				var uniform := RDUniform.new()

@@ -1,26 +1,11 @@
-[gd_scene load_steps=16 format=3 uid="uid://dopxpjgtfffh4"]
+[gd_scene load_steps=14 format=3 uid="uid://dopxpjgtfffh4"]
 
 [ext_resource type="PackedScene" uid="uid://c7kqgl1k10x14" path="res://addons/jar_voxel_terrain/src/chunk.tscn" id="1_0cm30"]
-[ext_resource type="JarPlanetSdf" uid="uid://c0w3b174vgmm7" path="res://demo/planet_sdf.tres" id="2_jw887"]
 [ext_resource type="Script" uid="uid://c0626baj7yc8l" path="res://demo/movable_camera.gd" id="2_kdd2p"]
+[ext_resource type="JarTerrainSdf" uid="uid://3jlwgf5biu2x" path="res://demo/terrain_sdf.tres" id="2_onu7k"]
 [ext_resource type="Script" uid="uid://mrm2gua4a45c" path="res://demo/post_processing/post_process_grayscale.gd" id="3_7ljui"]
 [ext_resource type="Script" uid="uid://02ob37nu5at8" path="res://demo/terrain_editor.gd" id="3_8rpa4"]
 [ext_resource type="PackedScene" uid="uid://dssyh6xc7ljec" path="res://demo/ball.tscn" id="3_hls1k"]
-[ext_resource type="Material" uid="uid://dchplw8cj4dal" path="res://demo/space/space_sky.tres" id="5_byijd"]
-
-[sub_resource type="JarVoxelLoD" id="JarVoxelLoD_elodc"]
-automatic_update_distance = 64.0
-min_lod_distance = 128.0
-lod_level_count = 14
-automatic_update = true
-resource_local_to_scene = true
-
-[sub_resource type="JarVoxelLoD" id="JarVoxelLoD_s1s6j"]
-automatic_update_distance = 64.0
-min_lod_distance = 128.0
-lod_level_count = 14
-automatic_update = true
-resource_local_to_scene = true
 
 [sub_resource type="CompositorEffect" id="CompositorEffect_j4wdv"]
 resource_local_to_scene = false
@@ -36,12 +21,14 @@ compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_j4wd
 
 [sub_resource type="Resource" id="JarSphereSdf_0ru4y"]
 
-[sub_resource type="Sky" id="Sky_vgllt"]
-sky_material = ExtResource("5_byijd")
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_onu7k"]
+
+[sub_resource type="Sky" id="Sky_s1s6j"]
+sky_material = SubResource("ProceduralSkyMaterial_onu7k")
 
 [sub_resource type="Environment" id="Environment_tn4qg"]
 background_mode = 2
-sky = SubResource("Sky_vgllt")
+sky = SubResource("Sky_s1s6j")
 tonemap_mode = 3
 
 [sub_resource type="BoxMesh" id="BoxMesh_70x3d"]
@@ -51,18 +38,10 @@ tonemap_mode = 3
 [node name="JarVoxelTerrain" type="JarVoxelTerrain" parent="." node_paths=PackedStringArray("player_node")]
 player_node = NodePath("../Camera3D")
 size = 20
-lod = SubResource("JarVoxelLoD_elodc")
 chunk_scene = ExtResource("1_0cm30")
-sdf = ExtResource("2_jw887")
-transform = Transform3D(1, 0, 0.000401426, 0, 1, 0, -0.000401426, 0, 1, -512, 0, 0)
-
-[node name="JarVoxelTerrain2" type="JarVoxelTerrain" parent="." node_paths=PackedStringArray("player_node")]
-player_node = NodePath("../Camera3D")
-size = 20
-lod = SubResource("JarVoxelLoD_s1s6j")
-chunk_scene = ExtResource("1_0cm30")
-sdf = ExtResource("2_jw887")
-transform = Transform3D(1, 0, 0.000401426, 0, 1, 0, -0.000401426, 0, 1, 1024, 0, 0)
+sdf = ExtResource("2_onu7k")
+lod_automatic_update = false
+transform = Transform3D(1, 0, 0.000401426, 0, 1, 0, -0.000401426, 0, 1, 0, 0, 0)
 
 [node name="Camera3D" type="Camera3D" parent="."]
 compositor = SubResource("Compositor_4sdup")

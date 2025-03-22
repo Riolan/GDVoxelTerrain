@@ -46,14 +46,14 @@ float VoxelOctreeNode::get_value()
     if (!is_leaf())
     {
         _value = 0;
-        // NodeColor = glm::vec4(0, 0, 0, 0);
+        NodeColor = glm::vec4(0, 0, 0, 0);
         for (auto &child : (*_children))
         {
             _value += child->get_value();
-            // NodeColor += child->NodeColor;
+            NodeColor += child->NodeColor;
         }
         _value *= 0.125f;
-        // NodeColor *= 0.125f;
+        NodeColor *= 0.125f;
     }
     _isDirty = false;
     return _value;
@@ -130,7 +130,7 @@ inline uint16_t VoxelOctreeNode::compute_boundaries(const JarVoxelTerrain &terra
     float el = edge_length(terrain.get_octree_scale());
     for (size_t i = 0; i < offsets.size(); i++)
     {
-        int lod = terrain.get_lod()->lod_at(_center + el * offsets[i]);
+        int lod = terrain.lod_at(_center + el * offsets[i]);
         boundaries |= (LoD < lod ? 1 : 0) << i; //high to low
         boundaries |= (LoD > lod ? 1 : 0) << (i + 8); //low to high
     }
@@ -138,7 +138,7 @@ inline uint16_t VoxelOctreeNode::compute_boundaries(const JarVoxelTerrain &terra
 
 void VoxelOctreeNode::build(JarVoxelTerrain &terrain)
 {
-    LoD = terrain.get_lod()->desired_lod(*this);
+    LoD = terrain.desired_lod(*this);
 
     if (!is_chunk(terrain))
         delete_chunk();
@@ -152,7 +152,7 @@ void VoxelOctreeNode::build(JarVoxelTerrain &terrain)
         set_value(value);
         if (has_surface(terrain, value) && (_size > LoD))
         {
-            subdivide(terrain._octreeScale);
+            subdivide(terrain.get_octree_scale());
             _isSet = true;
         }
         if (_size == min_size())
@@ -171,7 +171,7 @@ void VoxelOctreeNode::build(JarVoxelTerrain &terrain)
 bool VoxelOctreeNode::has_surface(const JarVoxelTerrain &terrain, const float value)
 {
     return std::abs(value) <
-           (1 << _size) * terrain._octreeScale * 1.44224957f * 1.5f; //(3*(1/2)^3)^(1/3) = 1.44224957 for d instead of r
+           (1 << _size) * terrain.get_octree_scale() * 1.44224957f * 1.5f; //(3*(1/2)^3)^(1/3) = 1.44224957 for d instead of r
 }
 
 void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain &terrain, const ModifySettings &settings)
@@ -182,23 +182,23 @@ void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain &terrain, const Modif
         return;
     }
 
-    auto bounds = get_bounds(terrain._octreeScale);
+    auto bounds = get_bounds(terrain.get_octree_scale());
     if (!settings.bounds.intersects(bounds))
         return;
 
-    LoD = terrain.get_lod()->desired_lod(*this);
+    LoD = terrain.desired_lod(*this);
     if (!_isSet)
         set_value(terrain.get_sdf()->distance(_center));
 
     float old_value = get_value();
     float sdf_value = settings.sdf->distance(_center - settings.position);
-    float new_value = SDF::apply_operation(settings.operation, old_value, sdf_value, terrain._octreeScale);
+    float new_value = SDF::apply_operation(settings.operation, old_value, sdf_value, terrain.get_octree_scale());
 
     // set_value(settings.sdf->distance(_center - settings.position));
 
     if (has_surface(terrain, new_value)) // || has_surface(terrain, sdf_value)
     {
-        subdivide(terrain._octreeScale);
+        subdivide(terrain.get_octree_scale());
     }
     else
     {
@@ -207,6 +207,8 @@ void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain &terrain, const Modif
     }
     set_value(new_value);
     _isSet = true;
+    if(std::abs(new_value - old_value) > 0.01f)
+        NodeColor = glm::vec4(1, 0, 0, 1);
 
     if (!is_leaf())
     {
@@ -261,7 +263,7 @@ void VoxelOctreeNode::delete_chunk()
 void VoxelOctreeNode::get_voxel_leaves_in_bounds(const JarVoxelTerrain &terrain, const Bounds &bounds,
                                                  std::vector<VoxelOctreeNode *> &result)
 {
-    if (!get_bounds(terrain._octreeScale).intersects(bounds))
+    if (!get_bounds(terrain.get_octree_scale()).intersects(bounds))
         return;
 
     // LoD = terrain.get_lod()->desired_lod(*this);
@@ -283,7 +285,7 @@ void VoxelOctreeNode::get_voxel_leaves_in_bounds(const JarVoxelTerrain &terrain,
 void VoxelOctreeNode::get_voxel_leaves_in_bounds(const JarVoxelTerrain &terrain, const Bounds &bounds, const int LOD,
                                                  std::vector<VoxelOctreeNode *> &result)
 {
-    if (!get_bounds(terrain._octreeScale).intersects(bounds) || (is_leaf() && _size > LOD))
+    if (!get_bounds(terrain.get_octree_scale()).intersects(bounds) || (is_leaf() && _size > LOD))
         return;
 
     if (_size == LOD)
@@ -301,7 +303,7 @@ void VoxelOctreeNode::get_voxel_leaves_in_bounds_excluding_bounds(const JarVoxel
                                                                   const Bounds &rejection_bounds, const int LOD,
                                                                   std::vector<VoxelOctreeNode *> &result)
 {
-    auto bounds = get_bounds(terrain._octreeScale);
+    auto bounds = get_bounds(terrain.get_octree_scale());
     if (!acceptance_bounds.intersects(bounds) || (is_leaf() && _size > LOD))
         return;
 

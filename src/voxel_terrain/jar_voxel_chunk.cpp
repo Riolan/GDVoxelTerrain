@@ -160,7 +160,7 @@ void JarVoxelChunk::update_chunk(const ChunkMeshData &chunk_mesh_data)
     array_mesh->clear_surfaces();
     array_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, chunk_mesh_data.mesh_array);
 
-    if (lod > 2)
+    if (lod > 1)
     {
         collision_shape->set_disabled(true);
     }

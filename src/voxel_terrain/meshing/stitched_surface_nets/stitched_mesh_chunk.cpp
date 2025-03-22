@@ -49,11 +49,11 @@ StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const Voxel
 {
     // if(chunk.LoD > 0 ) return;
     glm::vec3 chunkCenter = chunk._center;
-    auto cameraPosition = terrain.get_lod()->get_camera_position();
+    auto cameraPosition = terrain.get_camera_position();
     float leafSize = ((1 << chunk.LoD) * terrain.get_octree_scale());
-    Bounds bounds = chunk.get_bounds(terrain._octreeScale).expanded(leafSize - 0.001f);
+    Bounds bounds = chunk.get_bounds(terrain.get_octree_scale()).expanded(leafSize - 0.001f);
     nodes.clear();
-    terrain._voxelRoot->get_voxel_leaves_in_bounds(terrain, bounds, chunk.LoD, nodes);
+    terrain.get_voxel_leaves_in_bounds(bounds, chunk.LoD, nodes);
     innerNodeCount = nodes.size();
     bounds = bounds.expanded(0.001f);
 
@@ -65,7 +65,7 @@ StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const Voxel
     _lodL2HBoundaries = _lodH2LBoundaries = 0;
     for (size_t i = 0; i < CheckLodOffsets.size(); i++)
     {
-        int lod = terrain.get_lod()->lod_at(chunk._center + edge_length * CheckLodOffsets[i]);
+        int lod = terrain.lod_at(chunk._center + edge_length * CheckLodOffsets[i]);
         _lodL2HBoundaries |= (chunk.LoD > lod ? 1 : 0) << i;
         _lodH2LBoundaries |= (chunk.LoD < lod ? 1 : 0) << i;
     }
@@ -106,7 +106,7 @@ StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const Voxel
         // rejection_bounds = inner radius
         // acception_bounds = union of the 6 rings, should capture 8x8x2 nodes per side
         Bounds acceptance_bounds;
-        Bounds rejection_bounds = chunk.get_bounds(terrain._octreeScale);
+        Bounds rejection_bounds = chunk.get_bounds(terrain.get_octree_scale());
         for (size_t i = 0; i < CheckLodOffsets.size(); i++)
         {
             if (((_lodH2LBoundaries >> i) & 0b1) != 1)
@@ -131,7 +131,7 @@ StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const Voxel
 
         acceptance_bounds = acceptance_bounds.expanded(-0.001f); 
         rejection_bounds = rejection_bounds.expanded(-0.001f);
-        terrain._voxelRoot->get_voxel_leaves_in_bounds_excluding_bounds(terrain, acceptance_bounds, rejection_bounds,
+        terrain.get_voxel_leaves_in_bounds_excluding_bounds(acceptance_bounds, rejection_bounds,
                                                                         chunk.LoD + 1, nodes);
         ringNodeCount = nodes.size() - innerNodeCount;
         // UtilityFunctions::print(ringNodeCount);

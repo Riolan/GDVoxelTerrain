@@ -25,9 +25,8 @@ class JarVoxelTerrain : public Node3D
 {
     GDCLASS(JarVoxelTerrain, Node3D);
 
-  public:
+  private:
     std::unique_ptr<MeshComputeScheduler> _meshComputeScheduler;
-    Ref<JarVoxelLoD> _voxelLod;
 
     std::vector<float> _voxelEpsilons;
 
@@ -47,6 +46,12 @@ class JarVoxelTerrain : public Node3D
     bool _isBuilding = false;
     int _chunkSize = 0;
 
+    //LOD 
+    JarVoxelLoD _voxelLod;
+    int lod_level_count = 20;
+    bool lod_automatic_update = true;
+    float lod_automatic_update_distance = 64.0f;
+
     void build();
     void _notification(int what);
     void initialize();
@@ -56,6 +61,8 @@ class JarVoxelTerrain : public Node3D
     void process_modify_queue();
 
     // void process_delete_chunk_queue();
+
+    Node3D *_playerNode = nullptr;
 
   protected:
     static void _bind_methods();
@@ -76,8 +83,7 @@ class JarVoxelTerrain : public Node3D
     // properties
     Node3D *get_player_node() const;
     void set_player_node(Node3D *playerNode);
-    Ref<JarVoxelLoD> get_lod() const;
-    void set_lod(const Ref<JarVoxelLoD> &lod);
+
     Ref<JarSignedDistanceField> get_sdf() const;
     void set_sdf(const Ref<JarSignedDistanceField> &sdf);
 
@@ -95,14 +101,30 @@ class JarVoxelTerrain : public Node3D
     Ref<PackedScene> get_chunk_scene() const;
     void set_chunk_scene(const Ref<PackedScene> &value);
 
+    int get_lod_level_count() const;
+    void set_lod_level_count(int value);
+
+    bool get_lod_automatic_update() const;
+    void set_lod_automatic_update(bool value);
+
+    float get_lod_automatic_update_distance() const;
+    void set_lod_automatic_update_distance(float value);
+
     void get_voxel_leaves_in_bounds(const Bounds &bounds, std::vector<VoxelOctreeNode *> &nodes) const;
+    void get_voxel_leaves_in_bounds(const Bounds &bounds, int lod, std::vector<VoxelOctreeNode *> &nodes) const;
+    void get_voxel_leaves_in_bounds_excluding_bounds(const Bounds &bounds, const Bounds &excludeBounds, int lod,
+                                                     std::vector<VoxelOctreeNode *> &nodes) const;
 
     void spawn_debug_spheres_in_bounds(const Vector3 &position, const float range);
 
-  private:
-    Node3D *_playerNode = nullptr;
+    //LOD
+    glm::vec3 get_camera_position() const;
+    int desired_lod(const VoxelOctreeNode &node);
+    int lod_at(const glm::vec3 &position) const;
 };
 
 VARIANT_ENUM_CAST(SDF::Operation);
 
 #endif // VOXEL_TERRAIN_H
+
+

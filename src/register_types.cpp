@@ -24,7 +24,6 @@ void initialize_jar_voxel_terrain_module(ModuleInitializationLevel p_level)
         //TERRAIN
         GDREGISTER_CLASS(JarVoxelTerrain);
         GDREGISTER_CLASS(JarVoxelChunk);
-        GDREGISTER_CLASS(JarVoxelLoD);
     }
 }
 

@@ -24,12 +24,12 @@ const std::vector<std::vector<glm::ivec3>> AdaptiveMeshChunk::FaceOffsets = {YzO
 AdaptiveMeshChunk::AdaptiveMeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chunk)
 {
     glm::vec3 chunkCenter = chunk._center;
-    auto cameraPosition = terrain.get_lod()->get_camera_position();
+    auto cameraPosition = terrain.get_camera_position();
     Octant = glm::ivec3(chunkCenter.x > cameraPosition.x ? 1 : -1, chunkCenter.y > cameraPosition.y ? 1 : -1,
                         chunkCenter.z > cameraPosition.z ? 1 : -1);
 
     float leafSize = ((1 << chunk.LoD) * terrain.get_octree_scale());
-    Bounds bounds = chunk.get_bounds(terrain._octreeScale).expanded(leafSize - 0.001f);
+    Bounds bounds = chunk.get_bounds(terrain.get_octree_scale()).expanded(leafSize - 0.001f);
 
     // UtilityFunctions::print("Bounds: " + Utils::to_string(bounds));
 
@@ -81,7 +81,7 @@ AdaptiveMeshChunk::AdaptiveMeshChunk(const JarVoxelTerrain &terrain, const Voxel
     for (size_t i = 0; i < nodes.size(); i++)
     {
         VoxelOctreeNode *node = nodes[i];
-        Bounds b = node->get_bounds(terrain._octreeScale);
+        Bounds b = node->get_bounds(terrain.get_octree_scale());
 
         if (node->LoD < 0 || node->_size > maxChunkSize || !b.intersects(bounds))
             continue;

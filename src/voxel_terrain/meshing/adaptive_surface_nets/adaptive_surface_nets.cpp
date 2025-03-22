@@ -189,7 +189,7 @@ ChunkMeshData *AdaptiveSurfaceNets::generate_mesh_data(const JarVoxelTerrain &te
     meshData[Mesh::ARRAY_INDEX] = _indices;
 
     return new ChunkMeshData(meshData, _meshChunk.get_real_lod(), _meshChunk.is_edge_chunk(),
-                             _chunk->get_bounds(terrain._octreeScale));
+                             _chunk->get_bounds(terrain.get_octree_scale()));
 }
 
 inline void AdaptiveSurfaceNets::add_tri(int n0, int n1, int n2, bool flip)
