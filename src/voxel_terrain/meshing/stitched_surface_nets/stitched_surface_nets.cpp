@@ -7,7 +7,7 @@
 #include "utility/utils.h"
 
 StitchedSurfaceNets::StitchedSurfaceNets(const JarVoxelTerrain &terrain, const ScheduledChunk &chunk)
-    : _chunk(&chunk.node), _meshChunk(StitchedMeshChunk(terrain, chunk.node))
+    : _chunk(&chunk.node), _cubicVoxels(terrain.get_cubic_voxels()), _meshChunk(StitchedMeshChunk(terrain, chunk.node))
 {
 }
 
@@ -36,7 +36,7 @@ void StitchedSurfaceNets::create_vertex(const int node_id, const std::vector<int
         float t = glm::abs(valueA) / (glm::abs(valueA) + glm::abs(valueB));
         vertexPosition += glm::mix(posA, posB, t);
         edge_crossings++;
-        color += glm::mix(na->NodeColor, nb->NodeColor, t);
+        color += glm::mix(na->get_color(), nb->get_color(), t);
     }
 
     if (edge_crossings <= 0)
@@ -60,8 +60,8 @@ void StitchedSurfaceNets::create_vertex(const int node_id, const std::vector<int
     vertexPosition /= static_cast<float>(edge_crossings);
     color /= static_cast<float>(edge_crossings);
     normal = glm::normalize(normal);
-    // // if (SquareVoxels)
-    // vertexPosition = _meshChunk.nodes[node_id]->_center;
+    if (_cubicVoxels)
+        vertexPosition = _meshChunk.nodes[node_id]->_center;
 
     vertexPosition -= _chunk->_center;
     int vertexIndex = _verts.size();
@@ -191,7 +191,8 @@ ChunkMeshData *StitchedSurfaceNets::generate_mesh_data(const JarVoxelTerrain &te
                     continue;
                 int innerNeighbour = it->second;
 
-                // some function to find ring vertices
+                //FIXME: nodes on positive edge (e.g. node x:16) wont find any rings nodes in the x dir, even when they should.
+
                 std::vector<std::vector<int>> neighboursLists = find_ring_nodes(pos, i);
                 int n0 = _meshChunk.vertexIndices[node_id];
                 int n1 = _meshChunk.vertexIndices[innerNeighbour];
@@ -239,7 +240,7 @@ ChunkMeshData *StitchedSurfaceNets::generate_mesh_data(const JarVoxelTerrain &te
     meshData[Mesh::ARRAY_INDEX] = _indices;
 
     ChunkMeshData *output =
-        new ChunkMeshData(meshData, _chunk->LoD, _meshChunk.is_edge_chunk(), _chunk->get_bounds(terrain.get_octree_scale()));
+        new ChunkMeshData(meshData, _chunk->get_lod(), _meshChunk.is_edge_chunk(), _chunk->get_bounds(terrain.get_octree_scale()));
     output->h2l_boundaries = _meshChunk._lodH2LBoundaries;
     output->edgeVertices = _ringEdgeNodes;
     output->edgeVertices.insert(_innerEdgeNodes.begin(), _innerEdgeNodes.end());
@@ -251,16 +252,24 @@ ChunkMeshData *StitchedSurfaceNets::generate_mesh_data(const JarVoxelTerrain &te
     return output;
 }
 
+//this function finds way too many possible nodes.
+//Possible improvement: check the octant, e.g. we dont need to find ringnodes towards neighbours of the same LOD
+//Possible improvement: use the same system of a crossed edge as before to verify if we need a quad or not
 std::vector<std::vector<int>> StitchedSurfaceNets::find_ring_nodes(const glm::ivec3 &pos, const int face) const
 {
     static const glm::ivec3 face_offsets[3] = {glm::ivec3(1, 0, 0), glm::ivec3(0, 1, 0), glm::ivec3(0, 0, 1)};
-    static const glm::ivec3 ring_offsets[3][4] = {
-        {glm::ivec3(0, 1, 0), glm::ivec3(0, -1, 0), glm::ivec3(0, 0, 1), glm::ivec3(0, 0, -1)},
-        {glm::ivec3(1, 0, 0), glm::ivec3(-1, 0, 0), glm::ivec3(0, 0, 1), glm::ivec3(0, 0, -1)},
-        {glm::ivec3(1, 0, 0), glm::ivec3(-1, 0, 0), glm::ivec3(0, 1, 0), glm::ivec3(0, -1, 0)}};
+    static const glm::ivec3 ring_offsets[3][8] = {
+        {glm::ivec3(0, 1, 0), glm::ivec3(0, -1, 0), glm::ivec3(0, 0, 1), glm::ivec3(0, 0, -1), glm::ivec3(0, 1, 1), glm::ivec3(0, -1, -1), glm::ivec3(0, -1, 1), glm::ivec3(0, 1, -1)},
+        {glm::ivec3(1, 0, 0), glm::ivec3(-1, 0, 0), glm::ivec3(0, 0, 1), glm::ivec3(0, 0, -1), glm::ivec3(1, 0, 1), glm::ivec3(-1, 0, -1), glm::ivec3(-1, 0, 1), glm::ivec3(1, 0, -1)},
+        {glm::ivec3(1, 0, 0), glm::ivec3(-1, 0, 0), glm::ivec3(0, 1, 0), glm::ivec3(0, -1, 0), glm::ivec3(1, 1, 0), glm::ivec3(-1, -1, 0), glm::ivec3(-1, 1, 0), glm::ivec3(1, -1, 0)}};
+
+        // static const glm::ivec3 ring_offsets[3][4] = {
+        //     {glm::ivec3(0, 1, 0), glm::ivec3(0, -1, 0), glm::ivec3(0, 0, 1), glm::ivec3(0, 0, -1)},
+        //     {glm::ivec3(1, 0, 0), glm::ivec3(-1, 0, 0), glm::ivec3(0, 0, 1), glm::ivec3(0, 0, -1)},
+        //     {glm::ivec3(1, 0, 0), glm::ivec3(-1, 0, 0), glm::ivec3(0, 1, 0), glm::ivec3(0, -1, 0)}};
     // function to go from inner coordinates to ring coordinates
     auto get_ring_node = [this](const glm::ivec3 pos) {
-        glm::ivec3 ring_pos = glm::floor(glm::vec3(pos) / 2.0f);
+        glm::ivec3 ring_pos = glm::floor((glm::vec3(pos)) / 2.0f);
 
         auto it = _ringEdgeNodes.find(ring_pos);
         if (it == _ringEdgeNodes.end() || it->second < 0 || _meshChunk.vertexIndices[it->second] < 0)
@@ -270,22 +279,27 @@ std::vector<std::vector<int>> StitchedSurfaceNets::find_ring_nodes(const glm::iv
     };
 
     std::vector<std::vector<int>> result;
-
-    for (auto dir : ring_offsets[face])
+    for (size_t i = 0; i < 3; i++)//check all directions?
     {
-        int n0 = get_ring_node(pos + dir);
-        int n1 = get_ring_node(pos + dir + face_offsets[face]);
-
-        if (n0 >= 0 && n1 >= 0)
-            result.push_back({n0, n1});
-        else if (n0 >= 0)
-            result.push_back({n0});
-        else if (n1 >= 0)
-            result.push_back({n1});
+        for (auto dir : ring_offsets[i])
+        {
+            int n0 = get_ring_node(pos + dir);
+            int n1 = get_ring_node(pos + dir + face_offsets[i]);
+    
+            if (n0 >= 0 && n1 >= 0)
+                result.push_back({n0, n1});
+            else if (n0 >= 0)
+                result.push_back({n0});
+            else if (n1 >= 0)
+                result.push_back({n1});
+        }
     }
+    
+
     return result;
 }
-//I'd rather not base the winding order on the normal, but it works for now.
+
+//I'd rather not base the winding order on the normal, but it works for now. Only required for the edge chunk.
 inline void StitchedSurfaceNets::add_tri_fix_normal(int n0, int n1, int n2)
 {
     godot::Vector3 normal = (_verts[n1] - _verts[n0]).cross(_verts[n2] - _verts[n0]);

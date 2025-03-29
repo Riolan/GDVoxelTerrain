@@ -50,10 +50,10 @@ StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const Voxel
     // if(chunk.LoD > 0 ) return;
     glm::vec3 chunkCenter = chunk._center;
     auto cameraPosition = terrain.get_camera_position();
-    float leafSize = ((1 << chunk.LoD) * terrain.get_octree_scale());
+    float leafSize = ((1 << chunk.get_lod()) * terrain.get_octree_scale());
     Bounds bounds = chunk.get_bounds(terrain.get_octree_scale()).expanded(leafSize - 0.001f);
     nodes.clear();
-    terrain.get_voxel_leaves_in_bounds(bounds, chunk.LoD, nodes);
+    terrain.get_voxel_leaves_in_bounds(bounds, chunk.get_lod(), nodes);
     innerNodeCount = nodes.size();
     bounds = bounds.expanded(0.001f);
 
@@ -66,8 +66,8 @@ StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const Voxel
     for (size_t i = 0; i < CheckLodOffsets.size(); i++)
     {
         int lod = terrain.lod_at(chunk._center + edge_length * CheckLodOffsets[i]);
-        _lodL2HBoundaries |= (chunk.LoD > lod ? 1 : 0) << i;
-        _lodH2LBoundaries |= (chunk.LoD < lod ? 1 : 0) << i;
+        _lodL2HBoundaries |= (chunk.get_lod() > lod ? 1 : 0) << i;
+        _lodH2LBoundaries |= (chunk.get_lod() < lod ? 1 : 0) << i;
     }
 
     positions.clear();
@@ -132,7 +132,7 @@ StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const Voxel
         acceptance_bounds = acceptance_bounds.expanded(-0.001f); 
         rejection_bounds = rejection_bounds.expanded(-0.001f);
         terrain.get_voxel_leaves_in_bounds_excluding_bounds(acceptance_bounds, rejection_bounds,
-                                                                        chunk.LoD + 1, nodes);
+                                                                        chunk.get_lod() + 1, nodes);
         ringNodeCount = nodes.size() - innerNodeCount;
         // UtilityFunctions::print(ringNodeCount);
         if (ringNodeCount <= 0)

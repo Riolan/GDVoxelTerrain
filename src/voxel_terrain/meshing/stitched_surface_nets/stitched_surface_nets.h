@@ -31,6 +31,7 @@ class StitchedSurfaceNets
     std::unordered_map<glm::ivec3, int> _ringEdgeNodes;
 
     const VoxelOctreeNode *_chunk;
+    const bool _cubicVoxels;
     StitchedMeshChunk _meshChunk;
 
     inline void add_tri(int n0, int n1, int n2, bool flip);

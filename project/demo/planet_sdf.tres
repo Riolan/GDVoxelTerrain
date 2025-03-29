@@ -5,6 +5,6 @@ frequency = 0.001
 
 [resource]
 noise = SubResource("FastNoiseLite_awrh7")
-radius = 512.0
-center = Vector3(0, -512, 0)
-noise_scale = 5.0
+radius = 4096.0
+center = Vector3(0, -4146, 0)
+noise_scale = 100.0

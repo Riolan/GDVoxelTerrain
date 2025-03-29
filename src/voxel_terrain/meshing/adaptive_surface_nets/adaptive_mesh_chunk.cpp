@@ -28,7 +28,7 @@ AdaptiveMeshChunk::AdaptiveMeshChunk(const JarVoxelTerrain &terrain, const Voxel
     Octant = glm::ivec3(chunkCenter.x > cameraPosition.x ? 1 : -1, chunkCenter.y > cameraPosition.y ? 1 : -1,
                         chunkCenter.z > cameraPosition.z ? 1 : -1);
 
-    float leafSize = ((1 << chunk.LoD) * terrain.get_octree_scale());
+    float leafSize = ((1 << chunk.get_lod()) * terrain.get_octree_scale());
     Bounds bounds = chunk.get_bounds(terrain.get_octree_scale()).expanded(leafSize - 0.001f);
 
     // UtilityFunctions::print("Bounds: " + Utils::to_string(bounds));
@@ -40,19 +40,19 @@ AdaptiveMeshChunk::AdaptiveMeshChunk(const JarVoxelTerrain &terrain, const Voxel
     if (nodes.empty())
         return;
 
-    int chunkLoD = chunk.LoD;
-    RealLoD = chunk.LoD;
+    int chunkLoD = chunk.get_lod();
+    RealLoD = chunk.get_lod();
     _chunkResolution = ChunkRes;
 
     for (const VoxelOctreeNode *n : nodes)
     {
-        int l = n->LoD;
+        int l = n->get_lod();
         // if (l > chunkLoD)
         //     IsEdgeChunk = true;
         if (l >= chunkLoD)
             continue;
 
-        chunkLoD = chunk.LoD - 1;
+        chunkLoD = chunk.get_lod() - 1;
         leafSize = ((1 << chunkLoD) * terrain.get_octree_scale());
         _chunkResolution = LargeChunkRes;
         IsEdgeChunk = true;
@@ -83,7 +83,7 @@ AdaptiveMeshChunk::AdaptiveMeshChunk(const JarVoxelTerrain &terrain, const Voxel
         VoxelOctreeNode *node = nodes[i];
         Bounds b = node->get_bounds(terrain.get_octree_scale());
 
-        if (node->LoD < 0 || node->_size > maxChunkSize || !b.intersects(bounds))
+        if (node->get_lod() < 0 || node->_size > maxChunkSize || !b.intersects(bounds))
             continue;
 
         auto overlap = bounds.intersected(b);

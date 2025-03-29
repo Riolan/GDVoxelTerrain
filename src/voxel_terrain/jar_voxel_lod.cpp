@@ -8,8 +8,8 @@ JarVoxelLoD::JarVoxelLoD()
 {
 }
 
-JarVoxelLoD::JarVoxelLoD(bool automaticUpdate, float automaticUpdateDistance, int lodLevelCount)
-    : _automaticUpdate(automaticUpdate), _automaticUpdateDistance(automaticUpdateDistance), _lodLevelCount(lodLevelCount),
+JarVoxelLoD::JarVoxelLoD(const bool automaticUpdate, const float automaticUpdateDistance, const int lodLevelCount, const int shellSize, const float octreeScale)
+    : _automaticUpdate(automaticUpdate), _automaticUpdateDistance(automaticUpdateDistance), _lodLevelCount(lodLevelCount), _shellSize(shellSize), _octreeScale(octreeScale),
        _autoMeshCoolDown(0.0f), _cameraPosition(0.0f, 0.0f, 0.0f)
 {
 }
@@ -53,7 +53,7 @@ int JarVoxelLoD::desired_lod(const VoxelOctreeNode &node)
 
 
 inline float JarVoxelLoD::lod_to_grid_size(const int lod) const {
-    return (1 << lod) * 2.0f; // should be times octreescale?
+    return (1 << lod + 1) * _octreeScale; // should be times octreescale?
 }
 
 inline glm::vec3 JarVoxelLoD::snap_to_grid(const glm::vec3 pos, const float grid_size) const {
@@ -69,7 +69,7 @@ inline int JarVoxelLoD::lod_at(const glm::vec3 &position) const {
         glm::vec3 lod_cam_pos = snap_to_grid(cam_pos, grid_size);
         glm::vec3 delta = abs(pos - lod_cam_pos);
         float dist = glm::max(glm::max(delta.x, delta.y), delta.z);
-        if (dist < grid_size * 2.0f) {
+        if (dist < grid_size * _shellSize) {
             return lod;
         }
     }

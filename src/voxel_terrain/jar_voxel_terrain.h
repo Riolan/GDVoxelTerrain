@@ -34,6 +34,7 @@ class JarVoxelTerrain : public Node3D
     std::unique_ptr<VoxelOctreeNode> _voxelRoot;
 
     std::queue<ModifySettings> _modifySettingsQueue;
+    std::queue<JarVoxelChunk*> _updateChunkCollidersQueue;
     // std::queue<VoxelOctreeNode*> _deleteChunkQueue;
 
     // Exported variables
@@ -46,9 +47,12 @@ class JarVoxelTerrain : public Node3D
     bool _isBuilding = false;
     int _chunkSize = 0;
 
+    bool _cubicVoxels = false;
+
     //LOD 
     JarVoxelLoD _voxelLod;
     int lod_level_count = 20;
+    int lod_shell_size = 2;
     bool lod_automatic_update = true;
     float lod_automatic_update_distance = 64.0f;
 
@@ -70,10 +74,18 @@ class JarVoxelTerrain : public Node3D
   public:
     JarVoxelTerrain();
 
-    // enum
+
     void modify(const Ref<JarSignedDistanceField> sdf, const SDF::Operation operation, const Vector3 &position,
                 const float radius);
     void sphere_edit(const Vector3 &position, const float radius, bool operation_union);
+
+    void spawn_debug_spheres_in_bounds(const Vector3 &position, const float range);
+
+    void force_update_lod();
+
+
+    //chunks
+    void enqueue_chunk_collider(JarVoxelChunk *chunk);
     void enqueue_chunk_update(VoxelOctreeNode& node);
 
     // properties
@@ -101,8 +113,14 @@ class JarVoxelTerrain : public Node3D
     Ref<PackedScene> get_chunk_scene() const;
     void set_chunk_scene(const Ref<PackedScene> &value);
 
+    bool get_cubic_voxels() const;
+    void set_cubic_voxels(bool value);
+
     int get_lod_level_count() const;
     void set_lod_level_count(int value);
+
+    int get_lod_shell_size() const;
+    void set_lod_shell_size(int value);
 
     bool get_lod_automatic_update() const;
     void set_lod_automatic_update(bool value);
@@ -115,7 +133,7 @@ class JarVoxelTerrain : public Node3D
     void get_voxel_leaves_in_bounds_excluding_bounds(const Bounds &bounds, const Bounds &excludeBounds, int lod,
                                                      std::vector<VoxelOctreeNode *> &nodes) const;
 
-    void spawn_debug_spheres_in_bounds(const Vector3 &position, const float range);
+    
 
     //LOD
     glm::vec3 get_camera_position() const;

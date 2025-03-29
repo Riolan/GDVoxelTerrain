@@ -26,7 +26,7 @@ struct ScheduledChunk
 
     bool operator<(const VoxelOctreeNode &other) const
     {
-        return node.LoD > other.LoD;
+        return node.get_lod() > other.get_lod();
     }
 };
 

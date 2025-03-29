@@ -5,9 +5,9 @@
 #include "stitched_surface_nets/stitched_surface_nets.h"
 #include "voxel_octree_node.h"
 
-
 MeshComputeScheduler::MeshComputeScheduler(int maxConcurrentTasks)
-    : _maxConcurrentTasks(maxConcurrentTasks), _activeTasks(0), _totalTris(0), _prevTris(0), threadPool(maxConcurrentTasks)
+    : _maxConcurrentTasks(maxConcurrentTasks), _activeTasks(0), _totalTris(0), _prevTris(0),
+      threadPool(maxConcurrentTasks)
 {
 }
 
@@ -39,7 +39,7 @@ void MeshComputeScheduler::process_queue(JarVoxelTerrain &terrain)
 {
     while (!ChunksToAdd.empty())
     {
-        ScheduledChunk *chunk;        
+        ScheduledChunk *chunk;
         if (ChunksToAdd.try_pop(chunk))
         {
             run_task(terrain, *chunk);
@@ -49,9 +49,10 @@ void MeshComputeScheduler::process_queue(JarVoxelTerrain &terrain)
     }
 }
 
-
-void MeshComputeScheduler::run_task(const JarVoxelTerrain &terrain, ScheduledChunk &chunk) {
-    if(!chunk.node.is_chunk(terrain)) return;
+void MeshComputeScheduler::run_task(const JarVoxelTerrain &terrain, ScheduledChunk &chunk)
+{
+    if (!chunk.node.is_chunk(terrain))
+        return;
     threadPool.enqueue([this, &terrain, &chunk]() {
         auto meshCompute = StitchedSurfaceNets(terrain, chunk);
         ChunkMeshData *chunkMeshData = meshCompute.generate_mesh_data(terrain);
@@ -59,7 +60,6 @@ void MeshComputeScheduler::run_task(const JarVoxelTerrain &terrain, ScheduledChu
         _activeTasks--;
     });
 }
-
 
 void MeshComputeScheduler::clear_queue()
 {

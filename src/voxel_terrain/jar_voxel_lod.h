@@ -19,7 +19,9 @@ class JarVoxelLoD
 {
   private:
     float _automaticUpdateDistance = 64;
+    float _octreeScale = 1.0f;
     int _lodLevelCount = 20;
+    int _shellSize = 2;
     bool _automaticUpdate = true;
 
     int _maxChunkSize;
@@ -32,7 +34,7 @@ class JarVoxelLoD
 
   public:
     JarVoxelLoD();
-    JarVoxelLoD(bool automaticUpdate, float automaticUpdateDistance, int lodLevelCount);
+    JarVoxelLoD(const bool automaticUpdate, const float automaticUpdateDistance, const int lodLevelCount, const int shellSize, const float octreeScale);
 
     glm::vec3 get_camera_position() const;
 
