@@ -5,8 +5,8 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include "jar_voxel_terrain.h"
-AdaptiveSurfaceNets::AdaptiveSurfaceNets(const JarVoxelTerrain &terrain, const ScheduledChunk &chunk)
-    : _chunk(&chunk.node), _meshChunk(AdaptiveMeshChunk(terrain, chunk.node))
+AdaptiveSurfaceNets::AdaptiveSurfaceNets(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chunk)
+    : _chunk(&chunk), _meshChunk(AdaptiveMeshChunk(terrain, chunk))
 {
     int vertCount = _meshChunk.nodes.size();
     // _verts.reserve(vertCount);

@@ -15,26 +15,17 @@ using namespace godot;
 
 class JarVoxelTerrain;
 
-struct ScheduledChunk
-{
-  public:
-    VoxelOctreeNode &node;
 
-    ScheduledChunk(VoxelOctreeNode &node) : node(node)
-    {
-    }
-
-    bool operator<(const VoxelOctreeNode &other) const
-    {
-        return node.get_lod() > other.get_lod();
+struct ChunkComparator {
+    bool operator()(const VoxelOctreeNode *a, const VoxelOctreeNode *b) const {
+        return a->get_lod() > b->get_lod();
     }
 };
 
 class MeshComputeScheduler
 {
   private:
-    // concurrency::concurrent_queue<ScheduledChunk*> ChunksToAdd;
-    concurrency::concurrent_priority_queue<ScheduledChunk*> ChunksToAdd;
+    concurrency::concurrent_priority_queue<VoxelOctreeNode*, ChunkComparator> ChunksToAdd;
     concurrency::concurrent_queue<std::pair<VoxelOctreeNode*, ChunkMeshData*>> ChunksToProcess;
 
     std::atomic<int> _activeTasks;
@@ -47,7 +38,7 @@ class MeshComputeScheduler
     int _prevTris;
 
     void process_queue(JarVoxelTerrain &terrain);
-    void run_task(const JarVoxelTerrain &terrain, ScheduledChunk &chunk);
+    void run_task(const JarVoxelTerrain &terrain, VoxelOctreeNode &chunk);
 
   public:
     MeshComputeScheduler(int maxConcurrentTasks);

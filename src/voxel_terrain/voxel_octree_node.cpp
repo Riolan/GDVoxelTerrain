@@ -109,6 +109,11 @@ inline bool VoxelOctreeNode::is_materialized()
     return _isMaterialized == 0b11111111;
 }
 
+JarVoxelChunk *VoxelOctreeNode::get_chunk() const
+{
+    return _chunk;
+}
+
 inline bool VoxelOctreeNode::is_chunk(const JarVoxelTerrain &terrain) const
 {
     return _size == (LoD + terrain.get_min_chunk_size());
@@ -146,6 +151,21 @@ void VoxelOctreeNode::populateUniqueLoDValues(std::vector<int> &lodValues) const
 bool VoxelOctreeNode::is_enqueued() const
 {
     return _isEnqueued;
+}
+
+void VoxelOctreeNode::finished_meshing_notify_parent_and_children() const
+{
+    if (_parent != nullptr)
+    {
+        _parent->delete_chunk();
+    }
+    if (!is_leaf())
+    {
+        for (auto &child : *_children)
+        {
+            child->delete_chunk();
+        }
+    }
 }
 
 bool VoxelOctreeNode::is_parent_enqueued() const
@@ -189,9 +209,6 @@ void VoxelOctreeNode::build(JarVoxelTerrain &terrain)
 {
     LoD = terrain.desired_lod(*this);
 
-    if (!is_chunk(terrain))
-        delete_chunk();
-
     if (LoD < 0)
         return;
 
@@ -213,15 +230,18 @@ void VoxelOctreeNode::build(JarVoxelTerrain &terrain)
         }
     }
 
-    if (!is_leaf() && !(is_chunk(terrain) && (_chunk != nullptr || is_enqueued())) &&
-        (!is_materialized() || is_above_min_chunk(terrain)))
-        for (auto &child : *_children)
-            child->build(terrain);
-
     if (is_chunk(terrain) && !is_leaf() &&
         (_chunk == nullptr || (_chunk->is_edge_chunk()) ||
          (_chunk->get_h2l_boundaries() != (0xFF & compute_boundaries(terrain)))))
         queue_update(terrain);
+
+    if (!is_leaf() && !(is_chunk(terrain) && (_chunk != nullptr)) && // || is_enqueued()
+        (!is_materialized() || is_above_min_chunk(terrain)))
+        for (auto &child : *_children)
+            child->build(terrain);
+
+    if (!is_chunk(terrain))
+        delete_chunk();
 }
 
 bool VoxelOctreeNode::has_surface(const JarVoxelTerrain &terrain, const float value)
@@ -250,7 +270,7 @@ void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain &terrain, const Modif
     float sdf_value = settings.sdf->distance(_center - settings.position);
     float new_value = SDF::apply_operation(settings.operation, old_value, sdf_value, terrain.get_octree_scale());
 
-    //ensure the node has children if it contains a surface
+    // ensure the node has children if it contains a surface
     if (has_surface(terrain, new_value)) // || has_surface(terrain, sdf_value)
         subdivide(terrain.get_octree_scale());
     else
@@ -263,7 +283,7 @@ void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain &terrain, const Modif
 
     if (is_leaf())
         mark_materialized();
-    else //recurse down the tree
+    else // recurse down the tree
         for (auto &child : *_children)
             child->modify_sdf_in_bounds(terrain, settings);
 
@@ -276,6 +296,7 @@ void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain &terrain, const Modif
 void VoxelOctreeNode::update_chunk(JarVoxelTerrain &terrain, ChunkMeshData *chunkMeshData)
 {
     _isEnqueued = false;
+    finished_meshing_notify_parent_and_children();
     if (chunkMeshData == nullptr || !is_chunk(terrain))
     {
         delete_chunk();
@@ -288,7 +309,7 @@ void VoxelOctreeNode::update_chunk(JarVoxelTerrain &terrain, ChunkMeshData *chun
         terrain.add_child(_chunk);
     }
 
-    _chunk->update_chunk(terrain, chunkMeshData);
+    _chunk->update_chunk(terrain, this, chunkMeshData);
 }
 
 void VoxelOctreeNode::queue_update(JarVoxelTerrain &terrain)
@@ -301,6 +322,9 @@ void VoxelOctreeNode::queue_update(JarVoxelTerrain &terrain)
 
 void VoxelOctreeNode::delete_chunk()
 {
+    if (is_any_children_enqueued() || is_parent_enqueued())
+        return;
+
     if (_chunk != nullptr)
     {
         // JarVoxelTerrain::RemoveChunk(_chunk);

@@ -49,10 +49,12 @@ class VoxelOctreeNode : public OctreeNode<VoxelOctreeNode>
 
     int priority() const;
 
+    JarVoxelChunk *get_chunk() const;
     inline bool is_chunk(const JarVoxelTerrain &terrain) const;
     inline bool is_above_chunk(const JarVoxelTerrain &terrain) const;
     inline bool is_above_min_chunk(const JarVoxelTerrain &terrain) const;
     bool is_enqueued() const;
+    void finished_meshing_notify_parent_and_children() const;
     bool is_parent_enqueued() const;
     bool is_any_children_enqueued() const;
 

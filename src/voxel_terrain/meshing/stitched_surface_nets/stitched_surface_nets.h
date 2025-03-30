@@ -40,7 +40,7 @@ class StitchedSurfaceNets
     std::vector<std::vector<int>> find_ring_nodes(const glm::ivec3 &pos, const int face) const;    
 
   public:
-    StitchedSurfaceNets(const JarVoxelTerrain &terrain, const ScheduledChunk &chunk);
+    StitchedSurfaceNets(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chunk);
     ChunkMeshData *generate_mesh_data(const JarVoxelTerrain &terrain);
 };
 

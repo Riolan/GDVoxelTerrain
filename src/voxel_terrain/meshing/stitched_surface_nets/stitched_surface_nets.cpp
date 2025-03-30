@@ -6,8 +6,8 @@
 #include "jar_voxel_terrain.h"
 #include "utility/utils.h"
 
-StitchedSurfaceNets::StitchedSurfaceNets(const JarVoxelTerrain &terrain, const ScheduledChunk &chunk)
-    : _chunk(&chunk.node), _cubicVoxels(terrain.get_cubic_voxels()), _meshChunk(StitchedMeshChunk(terrain, chunk.node))
+StitchedSurfaceNets::StitchedSurfaceNets(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chunk)
+    : _chunk(&chunk), _cubicVoxels(terrain.get_cubic_voxels()), _meshChunk(StitchedMeshChunk(terrain, chunk))
 {
 }
 

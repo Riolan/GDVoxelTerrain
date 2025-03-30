@@ -1,5 +1,6 @@
 #include "jar_voxel_chunk.h"
 #include "voxel_terrain/jar_voxel_terrain.h"
+#include "voxel_terrain/voxel_octree_node.h"
 #include <godot_cpp/classes/sphere_mesh.hpp>
 #include <godot_cpp/classes/standard_material3d.hpp>
 
@@ -144,7 +145,7 @@ void JarVoxelChunk::set_material(Ref<ShaderMaterial> p_material)
 //     Ref<ShaderMaterial>(Object::cast_to<ShaderMaterial>(*mesh_instance->get_material_override()));
 // }
 
-void JarVoxelChunk::update_chunk(JarVoxelTerrain& terrain, ChunkMeshData *chunk_mesh_data)
+void JarVoxelChunk::update_chunk(JarVoxelTerrain& terrain, VoxelOctreeNode *node, ChunkMeshData *chunk_mesh_data)
 {
     _chunk_mesh_data = chunk_mesh_data;
     array_mesh = Ref<ArrayMesh>(Object::cast_to<ArrayMesh>(*mesh_instance->get_mesh()));
@@ -169,7 +170,7 @@ void JarVoxelChunk::update_chunk(JarVoxelTerrain& terrain, ChunkMeshData *chunk_
     {
         // collision_shape->set_disabled(!chunk_mesh_data->has_collision_mesh());
         // concave_polygon_shape->set_faces(chunk_mesh_data.create_collision_mesh());
-        terrain.enqueue_chunk_collider(this);
+        terrain.enqueue_chunk_collider(node);
     } else {
         collision_shape->set_disabled(true);
     }

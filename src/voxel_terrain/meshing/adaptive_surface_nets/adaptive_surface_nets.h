@@ -39,7 +39,7 @@ class AdaptiveSurfaceNets
     inline void add_tri(int n0, int n1, int n2, bool flip);
 
   public:
-    AdaptiveSurfaceNets(const JarVoxelTerrain &terrain, const ScheduledChunk &chunk);
+    AdaptiveSurfaceNets(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chunk);
 
     ChunkMeshData *generate_mesh_data(const JarVoxelTerrain &terrain);
 };

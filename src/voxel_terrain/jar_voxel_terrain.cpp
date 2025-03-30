@@ -36,6 +36,20 @@ void JarVoxelTerrain::_bind_methods()
     ClassDB::bind_method(D_METHOD("set_cubic_voxels", "cubic_voxels"), &JarVoxelTerrain::set_cubic_voxels);
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "cubic_voxels"), "set_cubic_voxels", "get_cubic_voxels");
 
+    // -------------------------------------------------- PERFORMANCE --------------------------------------------------
+    ADD_GROUP("Performance", "performance_");
+    ClassDB::bind_method(D_METHOD("get_max_concurrent_tasks"), &JarVoxelTerrain::get_max_concurrent_tasks);
+    ClassDB::bind_method(D_METHOD("set_max_concurrent_tasks", "value"), &JarVoxelTerrain::set_max_concurrent_tasks);
+    ADD_PROPERTY(PropertyInfo(Variant::INT, "performance_max_concurrent_tasks"), "set_max_concurrent_tasks",
+                 "get_max_concurrent_tasks");
+
+    ClassDB::bind_method(D_METHOD("get_updated_colliders_per_second"),
+                         &JarVoxelTerrain::get_updated_colliders_per_second);
+    ClassDB::bind_method(D_METHOD("set_updated_colliders_per_second", "value"),
+                         &JarVoxelTerrain::set_updated_colliders_per_second);
+    ADD_PROPERTY(PropertyInfo(Variant::INT, "performance_updated_colliders_per_second"),
+                 "set_updated_colliders_per_second", "get_updated_colliders_per_second");
+
     // -------------------------------------------------- LOD --------------------------------------------------
     ADD_GROUP("Level Of Detail", "lod_");
     ClassDB::bind_method(D_METHOD("get_lod_level_count"), &JarVoxelTerrain::get_lod_level_count);
@@ -105,11 +119,11 @@ void JarVoxelTerrain::sphere_edit(const Vector3 &position, const float radius, b
     //_modifySettingsQueue.push({sdf, Bounds(pos - edge, pos + edge), pos, operation});
 }
 
-void JarVoxelTerrain::enqueue_chunk_collider(JarVoxelChunk *chunk)
+void JarVoxelTerrain::enqueue_chunk_collider(VoxelOctreeNode *node)
 {
-    if (chunk == nullptr)
+    if (node == nullptr)
         return;
-    _updateChunkCollidersQueue.push(chunk);
+    _updateChunkCollidersQueue.push(node);
 }
 
 void JarVoxelTerrain::enqueue_chunk_update(VoxelOctreeNode &node)
@@ -201,7 +215,24 @@ void JarVoxelTerrain::set_cubic_voxels(bool value)
     _cubicVoxels = value;
 }
 
-// Getter and Setter implementations
+int JarVoxelTerrain::get_max_concurrent_tasks() const
+{
+    return _maxConcurrentTasks;
+}
+void JarVoxelTerrain::set_max_concurrent_tasks(int value)
+{
+    _maxConcurrentTasks = value;
+}
+
+int JarVoxelTerrain::get_updated_colliders_per_second() const
+{
+    return _updatedCollidersPerSecond;
+}
+void JarVoxelTerrain::set_updated_colliders_per_second(int value)
+{
+    _updatedCollidersPerSecond = value;
+}
+
 int JarVoxelTerrain::get_lod_level_count() const
 {
     return lod_level_count;
@@ -284,7 +315,7 @@ void JarVoxelTerrain::initialize()
     _chunkSize = (1 << _minChunkSize);
     _voxelLod =
         JarVoxelLoD(lod_automatic_update, lod_automatic_update_distance, lod_level_count, lod_shell_size, _octreeScale);
-    _meshComputeScheduler = std::make_unique<MeshComputeScheduler>(12);
+    _meshComputeScheduler = std::make_unique<MeshComputeScheduler>(_maxConcurrentTasks);
     _voxelRoot = std::make_unique<VoxelOctreeNode>(_size);
     //_populationRoot = memnew(PopulationOctreeNode(_size));
     build();
@@ -292,6 +323,7 @@ void JarVoxelTerrain::initialize()
 
 void JarVoxelTerrain::process()
 {
+    float delta = get_process_delta_time();
     if (_voxelLod.process(*this, false))
         build();
     _meshComputeScheduler->process(*this);
@@ -301,7 +333,7 @@ void JarVoxelTerrain::process()
         process_modify_queue();
     }
 
-    process_chunk_queue(0.0f); // static_cast<float>(delta)
+    process_chunk_queue(delta); // static_cast<float>(delta)
 }
 
 void printUniqueLoDValues(const std::vector<int> &lodValues)
@@ -347,19 +379,18 @@ void JarVoxelTerrain::process_chunk_queue(float delta)
     if (_updateChunkCollidersQueue.empty())
         return;
 
-    float max = std::max(_updateChunkCollidersQueue.size() * 0.1f, 16.0f);
-    // max = 1.0f;
-
-    for (int i = 0; i < std::min(max, static_cast<float>(_updateChunkCollidersQueue.size())); i++)
+    float rate = std::max(1.0f, static_cast<float>(_updatedCollidersPerSecond) * delta);
+    for (int i = 0; i < std::min(rate, static_cast<float>(_updateChunkCollidersQueue.size())); i++)
     {
         if (_updateChunkCollidersQueue.empty())
             return;
-        JarVoxelChunk *chunk = _updateChunkCollidersQueue.front();
+        VoxelOctreeNode *node = _updateChunkCollidersQueue.front();
         _updateChunkCollidersQueue.pop();
-        if (chunk == nullptr)
-        {
+        if (node == nullptr)
             continue;
-        }
+        JarVoxelChunk *chunk = node->get_chunk();
+        if (chunk == nullptr)
+            continue;
 
         chunk->update_collision_mesh();
     }

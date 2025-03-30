@@ -33,8 +33,14 @@ class JarVoxelTerrain : public Node3D
     Ref<JarSignedDistanceField> _sdf;
     std::unique_ptr<VoxelOctreeNode> _voxelRoot;
 
+    struct ChunkComparator {
+      bool operator()(const VoxelOctreeNode *a, const VoxelOctreeNode *b) const {
+          return a->get_lod() > b->get_lod();
+      }
+  };
+
     std::queue<ModifySettings> _modifySettingsQueue;
-    std::queue<JarVoxelChunk*> _updateChunkCollidersQueue;
+    std::queue<VoxelOctreeNode*> _updateChunkCollidersQueue;
     // std::queue<VoxelOctreeNode*> _deleteChunkQueue;
 
     // Exported variables
@@ -46,8 +52,11 @@ class JarVoxelTerrain : public Node3D
 
     bool _isBuilding = false;
     int _chunkSize = 0;
-
     bool _cubicVoxels = false;
+
+    //PERFORMANCE
+    int _maxConcurrentTasks = 12;
+    int _updatedCollidersPerSecond = 128;
 
     //LOD 
     JarVoxelLoD _voxelLod;
@@ -85,7 +94,7 @@ class JarVoxelTerrain : public Node3D
 
 
     //chunks
-    void enqueue_chunk_collider(JarVoxelChunk *chunk);
+    void enqueue_chunk_collider(VoxelOctreeNode *node);
     void enqueue_chunk_update(VoxelOctreeNode& node);
 
     // properties
@@ -115,6 +124,16 @@ class JarVoxelTerrain : public Node3D
 
     bool get_cubic_voxels() const;
     void set_cubic_voxels(bool value);
+
+
+    //PEROFRMANCE
+    int get_max_concurrent_tasks() const;
+    void set_max_concurrent_tasks(int value);
+
+    int get_updated_colliders_per_second() const;
+    void set_updated_colliders_per_second(int value);
+
+    //LOD
 
     int get_lod_level_count() const;
     void set_lod_level_count(int value);

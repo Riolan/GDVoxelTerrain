@@ -14,6 +14,7 @@
 using namespace godot;
 
 class JarVoxelTerrain;
+class VoxelOctreeNode;
 
 class JarVoxelChunk : public Node3D
 {
@@ -74,7 +75,7 @@ class JarVoxelChunk : public Node3D
     Ref<ShaderMaterial> get_material() const;
     void set_material(Ref<ShaderMaterial> p_material);
 
-    void update_chunk(JarVoxelTerrain &terrain, ChunkMeshData *chunk_mesh_data);
+    void update_chunk(JarVoxelTerrain &terrain, VoxelOctreeNode *node, ChunkMeshData *chunk_mesh_data);
     void update_collision_mesh();
     void delete_chunk();
 };

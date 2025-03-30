@@ -13,7 +13,7 @@ MeshComputeScheduler::MeshComputeScheduler(int maxConcurrentTasks)
 
 void MeshComputeScheduler::enqueue(VoxelOctreeNode &node)
 {
-    ChunksToAdd.push(new ScheduledChunk(node));
+    ChunksToAdd.push(&node);
 }
 
 void MeshComputeScheduler::process(JarVoxelTerrain &terrain)
@@ -39,7 +39,7 @@ void MeshComputeScheduler::process_queue(JarVoxelTerrain &terrain)
 {
     while (!ChunksToAdd.empty())
     {
-        ScheduledChunk *chunk;
+        VoxelOctreeNode *chunk;
         if (ChunksToAdd.try_pop(chunk))
         {
             run_task(terrain, *chunk);
@@ -49,14 +49,14 @@ void MeshComputeScheduler::process_queue(JarVoxelTerrain &terrain)
     }
 }
 
-void MeshComputeScheduler::run_task(const JarVoxelTerrain &terrain, ScheduledChunk &chunk)
+void MeshComputeScheduler::run_task(const JarVoxelTerrain &terrain, VoxelOctreeNode &chunk)
 {
-    if (!chunk.node.is_chunk(terrain))
+    if (!chunk.is_chunk(terrain))
         return;
     threadPool.enqueue([this, &terrain, &chunk]() {
         auto meshCompute = StitchedSurfaceNets(terrain, chunk);
         ChunkMeshData *chunkMeshData = meshCompute.generate_mesh_data(terrain);
-        ChunksToProcess.push(std::make_pair(&(chunk.node), chunkMeshData));
+        ChunksToProcess.push(std::make_pair(&(chunk), chunkMeshData));
         _activeTasks--;
     });
 }
