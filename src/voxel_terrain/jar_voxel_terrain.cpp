@@ -344,18 +344,25 @@ void JarVoxelTerrain::build()
 
 void JarVoxelTerrain::process_chunk_queue(float delta)
 {
-    // if (_updateChunkCollidersQueue.empty())
-    //     return;
+    if (_updateChunkCollidersQueue.empty())
+        return;
 
-    // int chunksPerSecond = _updateChunkCollidersQueue.size();
-    // float max = std::max(chunksPerSecond * 0.5f, 1.0f);
+    float max = std::max(_updateChunkCollidersQueue.size() * 0.1f, 16.0f);
+    // max = 1.0f;
 
-    // for (int i = 0; i < std::min(max, static_cast<float>(_updateChunkCollidersQueue.size())); i++)
-    // {
-    //     JarVoxelChunk *chunk = _updateChunkCollidersQueue.front();
-    //     _updateChunkCollidersQueue.pop();
-    //     chunk->update_collision_mesh();
-    // }
+    for (int i = 0; i < std::min(max, static_cast<float>(_updateChunkCollidersQueue.size())); i++)
+    {
+        if (_updateChunkCollidersQueue.empty())
+            return;
+        JarVoxelChunk *chunk = _updateChunkCollidersQueue.front();
+        _updateChunkCollidersQueue.pop();
+        if (chunk == nullptr)
+        {
+            continue;
+        }
+
+        chunk->update_collision_mesh();
+    }
 }
 
 void JarVoxelTerrain::generate_epsilons()

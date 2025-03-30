@@ -61,7 +61,7 @@ class VoxelOctreeNode : public OctreeNode<VoxelOctreeNode>
     inline bool has_surface(const JarVoxelTerrain &terrain, const float value);
     void queue_update(JarVoxelTerrain &terrain);
     void modify_sdf_in_bounds(JarVoxelTerrain &terrain, const ModifySettings &settings);
-    void update_chunk(JarVoxelTerrain &terrain, const ChunkMeshData* chunkMeshData);
+    void update_chunk(JarVoxelTerrain &terrain, ChunkMeshData* chunkMeshData);
 
     void delete_chunk();
     void get_voxel_leaves_in_bounds(const JarVoxelTerrain &terrain, const Bounds &Bounds,

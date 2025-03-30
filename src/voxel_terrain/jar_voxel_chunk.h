@@ -13,6 +13,8 @@
 
 using namespace godot;
 
+class JarVoxelTerrain;
+
 class JarVoxelChunk : public Node3D
 {
     GDCLASS(JarVoxelChunk, Node3D);
@@ -24,6 +26,7 @@ class JarVoxelChunk : public Node3D
     Bounds bounds;
 
     // node references
+    ChunkMeshData* _chunk_mesh_data = nullptr;
     MeshInstance3D* mesh_instance = nullptr;
     CollisionShape3D* collision_shape = nullptr;
     StaticBody3D* static_body = nullptr;
@@ -71,7 +74,7 @@ class JarVoxelChunk : public Node3D
     Ref<ShaderMaterial> get_material() const;
     void set_material(Ref<ShaderMaterial> p_material);
 
-    void update_chunk(const ChunkMeshData &chunk_mesh_data);
+    void update_chunk(JarVoxelTerrain &terrain, ChunkMeshData *chunk_mesh_data);
     void update_collision_mesh();
     void delete_chunk();
 };

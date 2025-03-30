@@ -1,4 +1,5 @@
 #include "jar_voxel_chunk.h"
+#include "voxel_terrain/jar_voxel_terrain.h"
 #include <godot_cpp/classes/sphere_mesh.hpp>
 #include <godot_cpp/classes/standard_material3d.hpp>
 
@@ -143,31 +144,34 @@ void JarVoxelChunk::set_material(Ref<ShaderMaterial> p_material)
 //     Ref<ShaderMaterial>(Object::cast_to<ShaderMaterial>(*mesh_instance->get_material_override()));
 // }
 
-void JarVoxelChunk::update_chunk(const ChunkMeshData &chunk_mesh_data)
+void JarVoxelChunk::update_chunk(JarVoxelTerrain& terrain, ChunkMeshData *chunk_mesh_data)
 {
+    _chunk_mesh_data = chunk_mesh_data;
     array_mesh = Ref<ArrayMesh>(Object::cast_to<ArrayMesh>(*mesh_instance->get_mesh()));
     concave_polygon_shape = Ref<ConcavePolygonShape3D>(Object::cast_to<ConcavePolygonShape3D>(*collision_shape->get_shape()));
     material = Ref<ShaderMaterial>(Object::cast_to<ShaderMaterial>(*mesh_instance->get_material_override()));
-    lod = chunk_mesh_data.lod;
-    h2l_boundaries = chunk_mesh_data.h2l_boundaries;
-    edge_chunk = chunk_mesh_data.edge_chunk;
+    lod = chunk_mesh_data->lod;
+    h2l_boundaries = chunk_mesh_data->h2l_boundaries;
+    edge_chunk = chunk_mesh_data->edge_chunk;
     auto old_bounds = bounds;
-    bounds = chunk_mesh_data.bounds;
+    bounds = chunk_mesh_data->bounds;
     auto position = bounds.get_center();
     // auto position = bounds.get_center() * 1.05f;
     set_position({position.x, position.y, position.z});
 
     array_mesh->clear_surfaces();
-    array_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, chunk_mesh_data.mesh_array);
+    array_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, chunk_mesh_data->mesh_array);
 
-    if (lod > 1)
-    {
-        collision_shape->set_disabled(true);
-    }
-    else
+    
+    bool generate_collider = lod < 2;
+
+    if(generate_collider)
     {
         // collision_shape->set_disabled(!chunk_mesh_data->has_collision_mesh());
-        concave_polygon_shape->set_faces(chunk_mesh_data.create_collision_mesh());
+        // concave_polygon_shape->set_faces(chunk_mesh_data.create_collision_mesh());
+        terrain.enqueue_chunk_collider(this);
+    } else {
+        collision_shape->set_disabled(true);
     }
 
     // Ref<StandardMaterial3D> stitch_material;
@@ -192,8 +196,9 @@ void JarVoxelChunk::update_chunk(const ChunkMeshData &chunk_mesh_data)
 
 void JarVoxelChunk::update_collision_mesh()
 {
-    // collision_shape->set_disabled(!chunk_mesh_data->has_collision_mesh);
-    // concave_polygon_shape->set_data(chunk_mesh_data->collision_mesh);
+    // if(is_queued_for_deletion()) return;
+    collision_shape->set_disabled(false);
+    concave_polygon_shape->set_faces(_chunk_mesh_data->create_collision_mesh());
 }
 
 void JarVoxelChunk::delete_chunk()

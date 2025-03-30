@@ -39,9 +39,10 @@ void VoxelOctreeNode::set_dirty(bool value)
     _isDirty = value;
 }
 
-//todo, make threadsafe. It's currently maybe fine (due to the way the scheduler is set up), but better safe than sorry.
+// todo, make threadsafe. It's currently maybe fine (due to the way the scheduler is set up), but better safe than
+// sorry.
 float VoxelOctreeNode::get_value()
-{    
+{
     if (!is_dirty())
         return _value;
     if (!is_leaf())
@@ -82,19 +83,23 @@ void VoxelOctreeNode::set_value(float value)
 
 void VoxelOctreeNode::mark_materialized()
 {
-    if(is_materialized()) return; //already marked
-    if(is_leaf()) {
-        _isMaterialized = 0b11111111;        
-    } else {
+    if (is_materialized())
+        return; // already marked
+    if (is_leaf())
+    {
+        _isMaterialized = 0b11111111;
+    }
+    else
+    {
         for (size_t i = 0; i < 8; ++i)
         {
             _isMaterialized |= _children->at(i)->is_materialized() ? 1 : 0 << i;
-        }        
-    }        
-    
+        }
+    }
+
     if (_parent != nullptr && is_materialized())
     {
-        _parent->mark_materialized();    
+        _parent->mark_materialized();
     }
 }
 
@@ -123,7 +128,6 @@ inline bool VoxelOctreeNode::is_one_above_chunk(const JarVoxelTerrain &terrain) 
 {
     return _size == (LoD + terrain.get_min_chunk_size() + 1);
 }
-
 
 void VoxelOctreeNode::populateUniqueLoDValues(std::vector<int> &lodValues) const
 {
@@ -166,18 +170,18 @@ inline bool VoxelOctreeNode::should_delete_chunk(const JarVoxelTerrain &terrain)
     return false;
 }
 
-inline uint16_t VoxelOctreeNode::compute_boundaries(const JarVoxelTerrain &terrain) const {
-    static const std::vector<glm::vec3> offsets = {glm::vec3(1, 0, 0), glm::vec3(-1, 0, 0),
-        glm::vec3(0, 1, 0), glm::vec3(0, -1, 0),
-        glm::vec3(0, 0, 1), glm::vec3(0, 0, -1)};
+inline uint16_t VoxelOctreeNode::compute_boundaries(const JarVoxelTerrain &terrain) const
+{
+    static const std::vector<glm::vec3> offsets = {glm::vec3(1, 0, 0),  glm::vec3(-1, 0, 0), glm::vec3(0, 1, 0),
+                                                   glm::vec3(0, -1, 0), glm::vec3(0, 0, 1),  glm::vec3(0, 0, -1)};
 
     uint16_t boundaries = 0;
     float el = edge_length(terrain.get_octree_scale());
     for (size_t i = 0; i < offsets.size(); i++)
     {
         int lod = terrain.lod_at(_center + el * offsets[i]);
-        boundaries |= (LoD < lod ? 1 : 0) << i; //high to low
-        boundaries |= (LoD > lod ? 1 : 0) << (i + 8); //low to high
+        boundaries |= (LoD < lod ? 1 : 0) << i;       // high to low
+        boundaries |= (LoD > lod ? 1 : 0) << (i + 8); // low to high
     }
 }
 
@@ -191,7 +195,6 @@ void VoxelOctreeNode::build(JarVoxelTerrain &terrain)
     if (LoD < 0)
         return;
 
-
     if (!_isSet)
     {
         float value = terrain.get_sdf()->distance(_center);
@@ -201,27 +204,30 @@ void VoxelOctreeNode::build(JarVoxelTerrain &terrain)
             subdivide(terrain.get_octree_scale());
             _isSet = true;
         }
-        //if we don't subdivide further, we mark it as a fully realized subtree
-        if (is_leaf() && (_size > LoD || _size == min_size())) { // 
+        // if we don't subdivide further, we mark it as a fully realized subtree
+        if (is_leaf() && (_size > LoD || _size == min_size()))
+        { //
             _isSet = true;
             mark_materialized();
             return;
-        }            
+        }
     }
 
-    if (!is_leaf() && !(is_chunk(terrain) && (_chunk != nullptr || is_enqueued())) && (!is_materialized() || is_above_min_chunk(terrain)))
+    if (!is_leaf() && !(is_chunk(terrain) && (_chunk != nullptr || is_enqueued())) &&
+        (!is_materialized() || is_above_min_chunk(terrain)))
         for (auto &child : *_children)
             child->build(terrain);
 
     if (is_chunk(terrain) && !is_leaf() &&
-        (_chunk == nullptr || (_chunk->is_edge_chunk()) || (_chunk->get_h2l_boundaries() != (0xFF & compute_boundaries(terrain)))))
+        (_chunk == nullptr || (_chunk->is_edge_chunk()) ||
+         (_chunk->get_h2l_boundaries() != (0xFF & compute_boundaries(terrain)))))
         queue_update(terrain);
 }
 
 bool VoxelOctreeNode::has_surface(const JarVoxelTerrain &terrain, const float value)
 {
-    return std::abs(value) <
-           (1 << _size) * terrain.get_octree_scale() * 1.44224957f * 1.5f; //(3*(1/2)^3)^(1/3) = 1.44224957 for d instead of r
+    return std::abs(value) < (1 << _size) * terrain.get_octree_scale() * 1.44224957f *
+                                 1.5f; //(3*(1/2)^3)^(1/3) = 1.44224957 for d instead of r
 }
 
 void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain &terrain, const ModifySettings &settings)
@@ -244,31 +250,22 @@ void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain &terrain, const Modif
     float sdf_value = settings.sdf->distance(_center - settings.position);
     float new_value = SDF::apply_operation(settings.operation, old_value, sdf_value, terrain.get_octree_scale());
 
-    // set_value(settings.sdf->distance(_center - settings.position));
-
+    //ensure the node has children if it contains a surface
     if (has_surface(terrain, new_value)) // || has_surface(terrain, sdf_value)
-    {
         subdivide(terrain.get_octree_scale());
-    }
     else
-    {
         prune_children();
-    }
+
     set_value(new_value);
     _isSet = true;
-    if(std::abs(new_value - old_value) > 0.01f)
+    if (std::abs(new_value - old_value) > 0.01f)
         NodeColor = glm::vec4(1, 0, 0, 1);
 
     if (is_leaf())
-    {
         mark_materialized();
-    }
-    else {
+    else //recurse down the tree
         for (auto &child : *_children)
-        {
             child->modify_sdf_in_bounds(terrain, settings);
-        }
-    }
 
     if (is_chunk(terrain))
         queue_update(terrain);
@@ -276,7 +273,7 @@ void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain &terrain, const Modif
         delete_chunk();
 }
 
-void VoxelOctreeNode::update_chunk(JarVoxelTerrain &terrain, const ChunkMeshData* chunkMeshData)
+void VoxelOctreeNode::update_chunk(JarVoxelTerrain &terrain, ChunkMeshData *chunkMeshData)
 {
     _isEnqueued = false;
     if (chunkMeshData == nullptr || !is_chunk(terrain))
@@ -291,7 +288,7 @@ void VoxelOctreeNode::update_chunk(JarVoxelTerrain &terrain, const ChunkMeshData
         terrain.add_child(_chunk);
     }
 
-    _chunk->update_chunk(*chunkMeshData);
+    _chunk->update_chunk(terrain, chunkMeshData);
 }
 
 void VoxelOctreeNode::queue_update(JarVoxelTerrain &terrain)
