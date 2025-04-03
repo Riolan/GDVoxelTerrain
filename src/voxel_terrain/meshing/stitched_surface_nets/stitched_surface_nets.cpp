@@ -241,7 +241,7 @@ ChunkMeshData *StitchedSurfaceNets::generate_mesh_data(const JarVoxelTerrain &te
 
     ChunkMeshData *output =
         new ChunkMeshData(meshData, _chunk->get_lod(), _meshChunk.is_edge_chunk(), _chunk->get_bounds(terrain.get_octree_scale()));
-    output->h2l_boundaries = _meshChunk._lodH2LBoundaries;
+    output->boundaries = _meshChunk._lodH2LBoundaries | (_meshChunk._lodL2HBoundaries << 8);
     output->edgeVertices = _ringEdgeNodes;
     output->edgeVertices.insert(_innerEdgeNodes.begin(), _innerEdgeNodes.end());
     for (auto &[pos, node_id] : output->edgeVertices)

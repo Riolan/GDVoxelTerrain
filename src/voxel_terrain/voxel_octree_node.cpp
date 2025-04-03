@@ -192,17 +192,19 @@ inline bool VoxelOctreeNode::should_delete_chunk(const JarVoxelTerrain &terrain)
 
 inline uint16_t VoxelOctreeNode::compute_boundaries(const JarVoxelTerrain &terrain) const
 {
-    static const std::vector<glm::vec3> offsets = {glm::vec3(1, 0, 0),  glm::vec3(-1, 0, 0), glm::vec3(0, 1, 0),
-                                                   glm::vec3(0, -1, 0), glm::vec3(0, 0, 1),  glm::vec3(0, 0, -1)};
+    static const std::vector<glm::vec3> offsets = {glm::vec3(1, 0, 0), glm::vec3(-1, 0, 0),
+        glm::vec3(0, 1, 0), glm::vec3(0, -1, 0),
+        glm::vec3(0, 0, 1), glm::vec3(0, 0, -1)};
 
     uint16_t boundaries = 0;
-    float el = edge_length(terrain.get_octree_scale());
-    for (size_t i = 0; i < offsets.size(); i++)
+    const float el = edge_length(terrain.get_octree_scale());
+    for (size_t i = 0; i < offsets.size(); ++i)
     {
-        int lod = terrain.lod_at(_center + el * offsets[i]);
-        boundaries |= (LoD < lod ? 1 : 0) << i;       // high to low
-        boundaries |= (LoD > lod ? 1 : 0) << (i + 8); // low to high
+        int l = terrain.lod_at(_center + el * offsets[i]);
+        boundaries |= (LoD < l ? 1 : 0) << i;       // high to low
+        boundaries |= (LoD > l ? 1 : 0) << (i + 8); // low to high
     }
+    return boundaries;
 }
 
 void VoxelOctreeNode::build(JarVoxelTerrain &terrain)
@@ -229,10 +231,9 @@ void VoxelOctreeNode::build(JarVoxelTerrain &terrain)
             return;
         }
     }
-
+ 
     if (is_chunk(terrain) && !is_leaf() &&
-        (_chunk == nullptr || (_chunk->is_edge_chunk()) ||
-         (_chunk->get_h2l_boundaries() != (0xFF & compute_boundaries(terrain)))))
+        (_chunk == nullptr || (_chunk->get_boundaries() != compute_boundaries(terrain))))
         queue_update(terrain);
 
     if (!is_leaf() && !(is_chunk(terrain) && (_chunk != nullptr)) && // || is_enqueued()

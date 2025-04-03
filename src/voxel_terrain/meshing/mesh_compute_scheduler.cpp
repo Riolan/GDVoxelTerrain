@@ -63,6 +63,7 @@ void MeshComputeScheduler::run_task(const JarVoxelTerrain &terrain, VoxelOctreeN
 
 void MeshComputeScheduler::clear_queue()
 {
+    //if we readd this, ensure to unenqueue all nodes!
     // ChunksToAdd.clear();
     // ChunksToProcess.clear();
 }

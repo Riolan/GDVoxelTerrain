@@ -21,7 +21,7 @@ class ChunkMeshData
     Array mesh_array;
     PackedVector3Array collision_mesh;
     int lod;
-    uint8_t h2l_boundaries;
+    uint16_t boundaries;
     bool edge_chunk;
     Bounds bounds;
     std::unordered_map<glm::ivec3, int> edgeVertices;

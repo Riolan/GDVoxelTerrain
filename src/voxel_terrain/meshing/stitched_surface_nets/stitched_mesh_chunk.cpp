@@ -62,13 +62,9 @@ StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const Voxel
 
     // find if there are any lod boundaries
     const float edge_length = chunk.edge_length(terrain.get_octree_scale());
-    _lodL2HBoundaries = _lodH2LBoundaries = 0;
-    for (size_t i = 0; i < CheckLodOffsets.size(); i++)
-    {
-        int lod = terrain.lod_at(chunk._center + edge_length * CheckLodOffsets[i]);
-        _lodL2HBoundaries |= (chunk.get_lod() > lod ? 1 : 0) << i;
-        _lodH2LBoundaries |= (chunk.get_lod() < lod ? 1 : 0) << i;
-    }
+    uint16_t boundaries = chunk.compute_boundaries(terrain);
+    _lodH2LBoundaries = boundaries & 0xFF;
+    _lodL2HBoundaries = (boundaries >> 8) & 0xFF;
 
     positions.clear();
     vertexIndices.clear();

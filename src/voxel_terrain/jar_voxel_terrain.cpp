@@ -324,7 +324,7 @@ void JarVoxelTerrain::initialize()
 void JarVoxelTerrain::process()
 {
     float delta = get_process_delta_time();
-    if (_voxelLod.process(*this, false))
+    if (!_isBuilding && !_meshComputeScheduler->is_meshing() &&_voxelLod.process(*this, false))
         build();
     _meshComputeScheduler->process(*this);
 
@@ -353,8 +353,7 @@ void printUniqueLoDValues(const std::vector<int> &lodValues)
 
 void JarVoxelTerrain::build()
 {
-    if (_isBuilding)
-        return;
+    if(_isBuilding || _meshComputeScheduler->is_meshing()) return;
     std::thread([this]() {
         // UtilityFunctions::print("start building");
         _isBuilding = true;
@@ -379,11 +378,12 @@ void JarVoxelTerrain::process_chunk_queue(float delta)
     if (_updateChunkCollidersQueue.empty())
         return;
 
-    float rate = std::max(1.0f, static_cast<float>(_updatedCollidersPerSecond) * delta);
-    for (int i = 0; i < std::min(rate, static_cast<float>(_updateChunkCollidersQueue.size())); i++)
+    int rate = std::max(1, static_cast<int>(std::ceil(_updatedCollidersPerSecond * delta)));
+    int target = std::min(rate, (int)_updateChunkCollidersQueue.size());
+
+    int processed = 0;
+    while (processed < target && !_updateChunkCollidersQueue.empty())
     {
-        if (_updateChunkCollidersQueue.empty())
-            return;
         VoxelOctreeNode *node = _updateChunkCollidersQueue.front();
         _updateChunkCollidersQueue.pop();
         if (node == nullptr)
@@ -392,7 +392,10 @@ void JarVoxelTerrain::process_chunk_queue(float delta)
         if (chunk == nullptr)
             continue;
 
-        chunk->update_collision_mesh();
+        if (JarVoxelChunk* chunk = node->get_chunk()) {
+            chunk->update_collision_mesh();
+            processed++;
+        }
     }
 }
 

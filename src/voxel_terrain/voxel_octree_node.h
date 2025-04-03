@@ -22,7 +22,7 @@ class VoxelOctreeNode : public OctreeNode<VoxelOctreeNode>
     bool _isSet = false;
     bool _isDirty = false;
     bool _isEnqueued = false;
-    uint8_t _isMaterialized; 
+    uint8_t _isMaterialized;
 
     JarVoxelChunk *_chunk = nullptr;
 
@@ -32,22 +32,22 @@ class VoxelOctreeNode : public OctreeNode<VoxelOctreeNode>
     void set_dirty(bool value);
     void set_value(float value);
 
-    //idea to not explore the whole tree, but only the children that are not materialized
-    void mark_materialized(); 
+    // idea to not explore the whole tree, but only the children that are not materialized
+    void mark_materialized();
     inline bool is_materialized();
-
 
     inline bool is_one_above_chunk(const JarVoxelTerrain &terrain) const;
     void populateUniqueLoDValues(std::vector<int> &lodValues) const;
 
     inline bool should_delete_chunk(const JarVoxelTerrain &terrain) const;
-    uint16_t compute_boundaries(const JarVoxelTerrain &terrain) const;
 
   public:
     VoxelOctreeNode(int size);
     VoxelOctreeNode(VoxelOctreeNode *parent, const glm::vec3 center, int size);
 
     int priority() const;
+
+    uint16_t compute_boundaries(const JarVoxelTerrain &terrain) const;
 
     JarVoxelChunk *get_chunk() const;
     inline bool is_chunk(const JarVoxelTerrain &terrain) const;
@@ -63,7 +63,7 @@ class VoxelOctreeNode : public OctreeNode<VoxelOctreeNode>
     inline bool has_surface(const JarVoxelTerrain &terrain, const float value);
     void queue_update(JarVoxelTerrain &terrain);
     void modify_sdf_in_bounds(JarVoxelTerrain &terrain, const ModifySettings &settings);
-    void update_chunk(JarVoxelTerrain &terrain, ChunkMeshData* chunkMeshData);
+    void update_chunk(JarVoxelTerrain &terrain, ChunkMeshData *chunkMeshData);
 
     void delete_chunk();
     void get_voxel_leaves_in_bounds(const JarVoxelTerrain &terrain, const Bounds &Bounds,

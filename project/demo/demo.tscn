@@ -40,7 +40,7 @@ player_node = NodePath("../Camera3D")
 size = 20
 chunk_scene = ExtResource("1_0cm30")
 sdf = ExtResource("2_onu7k")
-performance_updated_colliders_per_second = 256
+performance_updated_colliders_per_second = 2560
 lod_automatic_update_distance = 32.0
 transform = Transform3D(1, 0, 0.000401426, 0, 1, 0, -0.000401426, 0, 1, 0, 0, 0)
 

@@ -37,7 +37,7 @@ class StitchedMeshChunk
 
     bool is_edge_chunk() const
     {
-        return _lodH2LBoundaries != 0;
+        return _lodH2LBoundaries != 0 || _lodL2HBoundaries != 0;
     }
 
     inline bool is_on_any_boundary(const glm::ivec3 &position) const

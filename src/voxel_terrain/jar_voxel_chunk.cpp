@@ -21,6 +21,12 @@ void JarVoxelChunk::_bind_methods()
     ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "static_body", PROPERTY_HINT_NODE_TYPE, "StaticBody3D"),
                  "set_static_body", "get_static_body");
 
+    ClassDB::bind_method(D_METHOD("get_collider_lod_threshold"), &JarVoxelChunk::get_collider_lod_threshold);
+    ClassDB::bind_method(D_METHOD("set_collider_lod_threshold", "collider_lod_threshold"),
+                         &JarVoxelChunk::set_collider_lod_threshold);
+    ADD_PROPERTY(PropertyInfo(Variant::INT, "collider_lod_threshold"), "set_collider_lod_threshold",
+                 "get_collider_lod_threshold");
+
     // ClassDB::bind_method(D_METHOD("get_array_mesh"), &JarVoxelChunk::get_array_mesh);
     // ClassDB::bind_method(D_METHOD("set_array_mesh", "array_mesh"), &JarVoxelChunk::set_array_mesh);
     // ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "array_mesh", PROPERTY_HINT_RESOURCE_TYPE, "ArrayMesh"),
@@ -57,14 +63,24 @@ void JarVoxelChunk::set_lod(int p_lod)
     lod = p_lod;
 }
 
-uint8_t JarVoxelChunk::get_h2l_boundaries() const
+int JarVoxelChunk::get_collider_lod_threshold() const
 {
-    return h2l_boundaries;
+    return collider_lod_threshold;
 }
 
-void JarVoxelChunk::set_h2l_boundaries(uint8_t p_h2lboundaries)
+void JarVoxelChunk::set_collider_lod_threshold(int p_collider_lod_threshold)
 {
-    h2l_boundaries = p_h2lboundaries;
+    collider_lod_threshold = p_collider_lod_threshold;
+}
+
+uint8_t JarVoxelChunk::get_boundaries() const
+{
+    return boundaries;
+}
+
+void JarVoxelChunk::set_boundaries(uint8_t p_h2lboundaries)
+{
+    boundaries = p_h2lboundaries;
 }
 
 bool JarVoxelChunk::is_edge_chunk() const
@@ -145,14 +161,15 @@ void JarVoxelChunk::set_material(Ref<ShaderMaterial> p_material)
 //     Ref<ShaderMaterial>(Object::cast_to<ShaderMaterial>(*mesh_instance->get_material_override()));
 // }
 
-void JarVoxelChunk::update_chunk(JarVoxelTerrain& terrain, VoxelOctreeNode *node, ChunkMeshData *chunk_mesh_data)
+void JarVoxelChunk::update_chunk(JarVoxelTerrain &terrain, VoxelOctreeNode *node, ChunkMeshData *chunk_mesh_data)
 {
     _chunk_mesh_data = chunk_mesh_data;
     array_mesh = Ref<ArrayMesh>(Object::cast_to<ArrayMesh>(*mesh_instance->get_mesh()));
-    concave_polygon_shape = Ref<ConcavePolygonShape3D>(Object::cast_to<ConcavePolygonShape3D>(*collision_shape->get_shape()));
+    concave_polygon_shape =
+        Ref<ConcavePolygonShape3D>(Object::cast_to<ConcavePolygonShape3D>(*collision_shape->get_shape()));
     material = Ref<ShaderMaterial>(Object::cast_to<ShaderMaterial>(*mesh_instance->get_material_override()));
     lod = chunk_mesh_data->lod;
-    h2l_boundaries = chunk_mesh_data->h2l_boundaries;
+    boundaries = chunk_mesh_data->boundaries;
     edge_chunk = chunk_mesh_data->edge_chunk;
     auto old_bounds = bounds;
     bounds = chunk_mesh_data->bounds;
@@ -163,15 +180,16 @@ void JarVoxelChunk::update_chunk(JarVoxelTerrain& terrain, VoxelOctreeNode *node
     array_mesh->clear_surfaces();
     array_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, chunk_mesh_data->mesh_array);
 
-    
-    bool generate_collider = lod < 2;
+    bool generate_collider = lod <= collider_lod_threshold;
 
-    if(generate_collider)
+    if (generate_collider)
     {
         // collision_shape->set_disabled(!chunk_mesh_data->has_collision_mesh());
         // concave_polygon_shape->set_faces(chunk_mesh_data.create_collision_mesh());
         terrain.enqueue_chunk_collider(node);
-    } else {
+    }
+    else
+    {
         collision_shape->set_disabled(true);
     }
 
@@ -183,9 +201,9 @@ void JarVoxelChunk::update_chunk(JarVoxelTerrain& terrain, VoxelOctreeNode *node
     // sphere_mesh->set_radius(0.4f);
     // sphere_mesh->set_height(0.8f);
     // PackedVector3Array verts = chunk_mesh_data.mesh_array[Mesh::ARRAY_VERTEX];
-    // display all vertices: 
-    // for (auto& [position, vertexId]: chunk_mesh_data.edgeVertices) 
-    // {  
+    // display all vertices:
+    // for (auto& [position, vertexId]: chunk_mesh_data.edgeVertices)
+    // {
     //     Vector3 nodeCenter = verts[vertexId];
     //     MeshInstance3D *sphereInstance = memnew(MeshInstance3D);
     //     add_child(sphereInstance);
