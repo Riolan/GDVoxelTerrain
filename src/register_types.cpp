@@ -6,6 +6,11 @@
 #include "jar_plane_sdf.h"
 #include "jar_terrain_sdf.h"
 #include "jar_planet_sdf.h"
+#include "world.h"
+#include "planar_world.h"
+#include "spherical_world.h"
+#include "terrain_populator.h"
+#include "terrain_detail.h"
 using namespace godot;
 
 void initialize_jar_voxel_terrain_module(ModuleInitializationLevel p_level)
@@ -24,6 +29,16 @@ void initialize_jar_voxel_terrain_module(ModuleInitializationLevel p_level)
         //TERRAIN
         GDREGISTER_CLASS(JarVoxelTerrain);
         GDREGISTER_CLASS(JarVoxelChunk);
+
+        //WORLD
+        GDREGISTER_ABSTRACT_CLASS(JarWorld);
+        GDREGISTER_CLASS(JarPlanarWorld);
+        GDREGISTER_CLASS(JarSphericalWorld);
+
+        //POPULATION
+        GDREGISTER_ABSTRACT_CLASS(JarTerrainPopulator);
+        GDREGISTER_CLASS(JarTerrainDetail);
+
     }
 }
 

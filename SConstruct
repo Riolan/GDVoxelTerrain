@@ -11,20 +11,25 @@ env = SConscript("godot-cpp/SConstruct")
 # Add necessary include directories
 env.Append(CPPPATH=[
     "src/glm/",
-    "src/oneapi/",
     "src/utility/",
     "src/",
     "src/sdf/",
     "src/voxel_terrain/",
     "src/voxel_terrain/meshing",
     "src/voxel_terrain/meshing/adaptive_surface_nets",
-    "src/voxel_terrain/meshing/stitched_surface_nets",
+    "src/voxel_terrain/world",
+    "src/voxel_terrain/population",
+    "src/voxel_terrain/population/details",
+    "src/voxel_terrain/population/features",
 ])
 
-# Add main source files
+# # Add main source files
 sources = Glob("src/*.cpp") + Glob("src/utility/*.cpp") + Glob("src/sdf/*.cpp") + \
       Glob("src/voxel_terrain/*.cpp") + Glob("src/voxel_terrain/meshing/*.cpp") + \
-        Glob("src/voxel_terrain/meshing/adaptive_surface_nets/*.cpp") + Glob("src/voxel_terrain/meshing/stitched_surface_nets/*.cpp")
+        Glob("src/voxel_terrain/meshing/adaptive_surface_nets/*.cpp") + \
+            Glob("src/voxel_terrain/meshing/stitched_surface_nets/*.cpp") +\
+            Glob("src/voxel_terrain/population/*.cpp") + Glob("src/voxel_terrain/population/details/*.cpp") + \
+            Glob("src/voxel_terrain/population/features/*.cpp")
 
 #compiler flags
 if env['PLATFORM'] == 'windows':

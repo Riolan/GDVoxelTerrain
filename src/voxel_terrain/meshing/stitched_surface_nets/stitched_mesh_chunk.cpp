@@ -47,9 +47,12 @@ const std::vector<std::vector<glm::ivec3>> StitchedMeshChunk::FaceOffsets = {YzO
 
 StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chunk)
 {
-    // if(chunk.LoD > 0 ) return;
     glm::vec3 chunkCenter = chunk._center;
     auto cameraPosition = terrain.get_camera_position();
+    // if(chunk.LoD > 0 ) return;
+    Octant = glm::ivec3(chunkCenter.x > cameraPosition.x ? 1 : -1, chunkCenter.y > cameraPosition.y ? 1 : -1,
+        chunkCenter.z > cameraPosition.z ? 1 : -1);
+
     float leafSize = ((1 << chunk.get_lod()) * terrain.get_octree_scale());
     Bounds bounds = chunk.get_bounds(terrain.get_octree_scale()).expanded(leafSize - 0.001f);
     nodes.clear();
@@ -176,6 +179,12 @@ bool StitchedMeshChunk::should_have_quad(const glm::ivec3 &position, const int f
     default:
         return true;
     }
+}
+
+bool StitchedMeshChunk::on_positive_edge(const glm::ivec3 &position) const
+{
+    // we might also need some cases for l2h chunks i think
+    return position.x >= LargestPos - 1 || position.y >= LargestPos - 1 || position.z >= LargestPos - 1;
 }
 
 inline int StitchedMeshChunk::get_node_index_at(const glm::ivec3 &pos) const

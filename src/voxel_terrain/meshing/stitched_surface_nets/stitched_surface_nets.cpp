@@ -186,27 +186,19 @@ ChunkMeshData *StitchedSurfaceNets::generate_mesh_data(const JarVoxelTerrain &te
             auto faceDirs = _meshChunk.faceDirs[node_id];
             for (int i = 0; i < faces; i++)
             {
-                auto it = _innerEdgeNodes.find(pos + offsets[i]);
-                if (it == _innerEdgeNodes.end() || it->second < 0)
-                    continue;
-                int innerNeighbour = it->second;
-
-                //FIXME: nodes on positive edge (e.g. node x:16) wont find any rings nodes in the x dir, even when they should.
+                int innerNeighbour = node_id;
+                if(!(_meshChunk.on_positive_edge(pos))) {
+                    auto it = _innerEdgeNodes.find(pos + offsets[i]);
+                    if (it == _innerEdgeNodes.end() || it->second < 0)
+                        continue;
+                    innerNeighbour = it->second;
+                }
 
                 std::vector<std::vector<int>> neighboursLists = find_ring_nodes(pos, i);
                 int n0 = _meshChunk.vertexIndices[node_id];
                 int n1 = _meshChunk.vertexIndices[innerNeighbour];
                 for (auto &neighbours : neighboursLists)
                 {
-                    std::vector<int> allNodes = {n1};
-                    allNodes.insert(allNodes.end(), neighbours.begin(), neighbours.end());
-                    int minNode = n0;
-                    for (int n : allNodes)
-                    {
-                        if (glm::any(glm::lessThan(_meshChunk.nodes[n]->_center, _meshChunk.nodes[minNode]->_center)))
-                            minNode = n;
-                    }
-
                     if (neighbours.size() == 2)
                     {
                         int n2 = _meshChunk.vertexIndices[neighbours[0]];

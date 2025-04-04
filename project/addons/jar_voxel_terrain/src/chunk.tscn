@@ -20,7 +20,6 @@ resource_local_to_scene = true
 mesh_instance = NodePath("MeshInstance3D")
 collision_shape = NodePath("StaticBody3D/CollisionShape3D")
 static_body = NodePath("StaticBody3D")
-collider_lod_threshold = 2
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 material_override = SubResource("ShaderMaterial_ut1dc")

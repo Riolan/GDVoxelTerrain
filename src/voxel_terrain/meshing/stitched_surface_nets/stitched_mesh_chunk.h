@@ -25,6 +25,7 @@ class StitchedMeshChunk
     static const std::vector<std::vector<glm::ivec3>> FaceOffsets;
 
     bool should_have_quad(const glm::ivec3 &position, const int face) const;
+    bool on_positive_edge(const glm::ivec3 &position) const;
     inline int get_node_index_at(const glm::ivec3 &pos) const;
     bool get_unique_neighbouring_vertices(const glm::ivec3 &pos, const std::vector<glm::ivec3> &offsets,
                                           std::vector<int> &result) const;
@@ -80,7 +81,7 @@ class StitchedMeshChunk
         return half_leaf_size;
     }
 
-    // glm::ivec3 Octant{1, 1, 1};
+    glm::ivec3 Octant{1, 1, 1};
     std::vector<VoxelOctreeNode *> nodes;
     std::vector<glm::ivec3> positions;
     std::vector<int> vertexIndices;

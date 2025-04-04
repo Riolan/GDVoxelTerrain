@@ -26,23 +26,6 @@ void JarVoxelChunk::_bind_methods()
                          &JarVoxelChunk::set_collider_lod_threshold);
     ADD_PROPERTY(PropertyInfo(Variant::INT, "collider_lod_threshold"), "set_collider_lod_threshold",
                  "get_collider_lod_threshold");
-
-    // ClassDB::bind_method(D_METHOD("get_array_mesh"), &JarVoxelChunk::get_array_mesh);
-    // ClassDB::bind_method(D_METHOD("set_array_mesh", "array_mesh"), &JarVoxelChunk::set_array_mesh);
-    // ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "array_mesh", PROPERTY_HINT_RESOURCE_TYPE, "ArrayMesh"),
-    //              "set_array_mesh", "get_array_mesh");
-
-    // ClassDB::bind_method(D_METHOD("get_concave_polygon_shape"), &JarVoxelChunk::get_concave_polygon_shape);
-    // ClassDB::bind_method(D_METHOD("set_concave_polygon_shape", "concave_polygon_shape"),
-    //                      &JarVoxelChunk::set_concave_polygon_shape);
-    // ADD_PROPERTY(
-    //     PropertyInfo(Variant::OBJECT, "concave_polygon_shape", PROPERTY_HINT_RESOURCE_TYPE, "ConcavePolygonShape3D"),
-    //     "set_concave_polygon_shape", "get_concave_polygon_shape");
-
-    // ClassDB::bind_method(D_METHOD("get_material"), &JarVoxelChunk::get_material);
-    // ClassDB::bind_method(D_METHOD("set_material", "material"), &JarVoxelChunk::set_material);
-    // ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial"),
-    //              "set_material", "get_material");
 }
 
 JarVoxelChunk::JarVoxelChunk() : lod(0), edge_chunk(false)

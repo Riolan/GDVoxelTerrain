@@ -45,6 +45,7 @@ vec3 hue(vec3 input, float offset, int range_index) {
 	} else {
 		hsv.x = hue;
 	}
+	hsv.y *= 0.5;
 
 	// HSV to RGB
 	vec4 k2 = vec4(1., 2./3., 1./3., 3.);

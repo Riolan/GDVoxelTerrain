@@ -6,6 +6,7 @@ var rd: RenderingDevice
 var shader: RID
 var pipeline: RID
 
+@export_tool_button("Reload Shader") var reload_shader_action = _init
 
 func _init() -> void:
 	effect_callback_type = EFFECT_CALLBACK_TYPE_POST_TRANSPARENT
@@ -25,6 +26,9 @@ func _notification(what: int) -> void:
 #region Code in this region runs on the rendering thread.
 # Compile our shader at initialization.
 func _initialize_compute() -> void:
+	if shader.is_valid():
+		rd.free_rid(shader)
+		
 	rd = RenderingServer.get_rendering_device()
 	if not rd:
 		return
