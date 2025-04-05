@@ -95,14 +95,14 @@ void sky() {
 
 	float _sun_distance = 0.0;
 	float sun_size = 0.1f, sun_blur = 1.0f;
-	vec3 sun_color = vec3(1,.4,.2) * 2.0;
+	vec3 sun_color = vec3(1,.5,.2) * 2.0;
 	if( LIGHT0_ENABLED )
 	{
 		_sun_distance = distance( EYEDIR, LIGHT0_DIRECTION );
 		// Bigger sun near the horizon
 		float _sun_size = sun_size + cos( LIGHT0_DIRECTION.y * PI ) * sun_size * 0.25;
 		// Finding sun disc and edge blur
-		float _sun_amount = clamp(( 1.0 - _sun_distance / _sun_size ) / sun_blur, 0.0, 1.0 );
+		float _sun_amount = pow(clamp(( 1.0 - _sun_distance / _sun_size ) / sun_blur, 0.0, 1.0 ), 4.0);
 		if( _sun_amount > 0.0 )
 		{
 			COLOR = mix( COLOR, sun_color, _sun_amount );

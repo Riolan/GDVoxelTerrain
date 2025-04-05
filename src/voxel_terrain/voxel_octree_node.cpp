@@ -275,7 +275,8 @@ void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain &terrain, const Modif
     if (has_surface(terrain, new_value)) // || has_surface(terrain, sdf_value)
         subdivide(terrain.get_octree_scale());
     else
-        prune_children();
+        if(settings.bounds.encloses(bounds))
+            prune_children();
 
     set_value(new_value);
     _isSet = true;

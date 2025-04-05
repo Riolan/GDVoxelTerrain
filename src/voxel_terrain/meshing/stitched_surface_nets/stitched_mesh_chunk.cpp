@@ -51,7 +51,7 @@ StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const Voxel
     auto cameraPosition = terrain.get_camera_position();
     // if(chunk.LoD > 0 ) return;
     Octant = glm::ivec3(chunkCenter.x > cameraPosition.x ? 1 : -1, chunkCenter.y > cameraPosition.y ? 1 : -1,
-        chunkCenter.z > cameraPosition.z ? 1 : -1);
+                        chunkCenter.z > cameraPosition.z ? 1 : -1);
 
     float leafSize = ((1 << chunk.get_lod()) * terrain.get_octree_scale());
     Bounds bounds = chunk.get_bounds(terrain.get_octree_scale()).expanded(leafSize - 0.001f);
@@ -128,15 +128,15 @@ StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const Voxel
         // UtilityFunctions::print("ab: " + Utils::to_string(acceptance_bounds.get_size() * normalizingFactor) +
         //                         ", rb: " + Utils::to_string(rejection_bounds.get_size() * normalizingFactor));
 
-        acceptance_bounds = acceptance_bounds.expanded(-0.001f); 
+        acceptance_bounds = acceptance_bounds.expanded(-0.001f);
         rejection_bounds = rejection_bounds.expanded(-0.001f);
-        terrain.get_voxel_leaves_in_bounds_excluding_bounds(acceptance_bounds, rejection_bounds,
-                                                                        chunk.get_lod() + 1, nodes);
+        terrain.get_voxel_leaves_in_bounds_excluding_bounds(acceptance_bounds, rejection_bounds, chunk.get_lod() + 1,
+                                                            nodes);
         ringNodeCount = nodes.size() - innerNodeCount;
         // UtilityFunctions::print(ringNodeCount);
         if (ringNodeCount <= 0)
             return;
-        //should be based on full ring mode, i.e. -5 to 5 nodes
+        // should be based on full ring mode, i.e. -5 to 5 nodes
         glm::vec3 minPos = chunkCenter - 10 / LEAF_COUNT * edge_length;
         glm::ivec3 clampMax = glm::ivec3(9);
         glm::vec3 minRecPos = glm::vec3(3875439875983);
@@ -146,7 +146,7 @@ StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const Voxel
         {
             VoxelOctreeNode *node = nodes[i];
             glm::ivec3 pos = (glm::ivec3)glm::ceil((node->_center - minPos) * normalizingFactor) - glm::ivec3(1.0f);
-            
+
             minRecPos = glm::min(minRecPos, glm::vec3(pos));
             maxRecPos = glm::max(maxRecPos, glm::vec3(pos));
 
@@ -184,7 +184,10 @@ bool StitchedMeshChunk::should_have_quad(const glm::ivec3 &position, const int f
 bool StitchedMeshChunk::on_positive_edge(const glm::ivec3 &position) const
 {
     // we might also need some cases for l2h chunks i think
-    return position.x >= LargestPos - 1 || position.y >= LargestPos - 1 || position.z >= LargestPos - 1;
+    return (((_lodH2LBoundaries & 0b1) != 0 && position.x >= LargestPos - 2) ? 1 : 0) +
+               (((_lodH2LBoundaries & 0b100) != 0 && position.y >= LargestPos - 2) ? 1 : 0) +
+               (((_lodH2LBoundaries & 0b10000) != 0 && position.z >= LargestPos - 2) ? 1 : 0) >=
+           2;
 }
 
 inline int StitchedMeshChunk::get_node_index_at(const glm::ivec3 &pos) const
@@ -245,14 +248,14 @@ bool StitchedMeshChunk::should_have_boundary_quad(const std::vector<int> &neighb
     // if on ring, we check the other side. if not on ring, we check outward of the chunk
     for (size_t i = 0; i < CheckLodOffsets.size(); i++)
     {
-        if (((_lodH2LBoundaries >> i) & 0b1) != 1) //this should also check where this node resides.
+        if (((_lodH2LBoundaries >> i) & 0b1) != 1) // this should also check where this node resides.
             continue;
         int j = i;
-        if (on_ring) //swap the direction we look into
+        if (on_ring) // swap the direction we look into
         {
             if (j % 2 == 0)
                 j++;
-            else 
+            else
                 j--;
         }
 
