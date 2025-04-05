@@ -8,6 +8,10 @@ var pipeline: RID
 
 @export_tool_button("Reload Shader") var reload_shader_action = _init
 
+@export var position : Vector3
+@export var radius : float
+@export var color : Color = Color(0.4, 0.6, 0.9, 1.0)
+
 func _init() -> void:
 	effect_callback_type = EFFECT_CALLBACK_TYPE_POST_TRANSPARENT
 	rd = RenderingServer.get_rendering_device()
@@ -93,6 +97,13 @@ func _render_callback(p_effect_callback_type: EffectCallbackType, p_render_data:
 			var matrices_buffer = PackedByteArray()
 			matrices_buffer.append_array(ip_buffer)
 			matrices_buffer.append_array(ivp_buffer)
+			
+			##properties
+			var properties = [
+				color.r, color.g, color.b, color.a,
+				position.x, position.y, position.z, radius
+			]
+			var properties_buffer = PackedFloat32Array(properties).to_byte_array()
 
 			# Loop through views just in case we're doing stereo rendering. No extra cost if this is mono.
 			var view_count: int = render_scene_buffers.get_view_count()
@@ -115,15 +126,20 @@ func _render_callback(p_effect_callback_type: EffectCallbackType, p_render_data:
 				uniform_depth_image.add_id(depth_image)				
 				var uniform_set_0 := UniformSetCacheRD.get_cache(shader, 0, [uniform_color_image, uniform_depth_image])
 				
-				## set1: matrices
+				## set1: matrices / properties
 				var mat_buffer : RID =  rd.uniform_buffer_create(128, matrices_buffer)
 				var matrices_uniform : RDUniform = RDUniform.new()
 				matrices_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_UNIFORM_BUFFER
 				matrices_uniform.binding = 0
-				matrices_uniform.add_id(mat_buffer)				
-				var uniform_set_1: RID = UniformSetCacheRD.get_cache(shader, 1, [  matrices_uniform ])
-								
-
+				matrices_uniform.add_id(mat_buffer)
+				
+				var properties_buffer_rid : RID =  rd.uniform_buffer_create(properties_buffer.size(), properties_buffer)
+				var properties_uniform : RDUniform = RDUniform.new()
+				properties_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_UNIFORM_BUFFER
+				properties_uniform.binding = 1
+				properties_uniform.add_id(properties_buffer_rid)
+				
+				var uniform_set_1: RID = UniformSetCacheRD.get_cache(shader, 1, [  matrices_uniform, properties_uniform ])
 
 				# Run our compute shader.
 				var compute_list := rd.compute_list_begin()

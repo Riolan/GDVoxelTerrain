@@ -1,7 +1,7 @@
 #ifndef AABB_SDF_H
 #define AABB_SDF_H
 
-#include "jar_signed_distance_field.h"
+#include "signed_distance_field.h"
 
 class JarBoxSdf : public JarSignedDistanceField
 {

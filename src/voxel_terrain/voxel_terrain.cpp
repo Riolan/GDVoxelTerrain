@@ -1,7 +1,7 @@
-#include "jar_voxel_terrain.h"
-#include "jar_plane_sdf.h"
-#include "jar_sphere_sdf.h"
+#include "voxel_terrain.h"
 #include "modify_settings.h"
+#include "plane_sdf.h"
+#include "sphere_sdf.h"
 
 void JarVoxelTerrain::_bind_methods()
 {
@@ -9,6 +9,11 @@ void JarVoxelTerrain::_bind_methods()
     ClassDB::bind_method(D_METHOD("set_player_node", "player_node"), &JarVoxelTerrain::set_player_node);
     ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "player_node", PROPERTY_HINT_NODE_TYPE, "Node3D"), "set_player_node",
                  "get_player_node");
+
+    ClassDB::bind_method(D_METHOD("get_world_node"), &JarVoxelTerrain::get_world_node);
+    ClassDB::bind_method(D_METHOD("set_world_node", "world_node"), &JarVoxelTerrain::set_world_node);
+    ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "world_node", PROPERTY_HINT_NODE_TYPE, "JarWorld"), "set_world_node",
+                 "get_world_node");
 
     ClassDB::bind_method(D_METHOD("get_octree_scale"), &JarVoxelTerrain::get_octree_scale);
     ClassDB::bind_method(D_METHOD("set_octree_scale", "value"), &JarVoxelTerrain::set_octree_scale);
@@ -71,6 +76,15 @@ void JarVoxelTerrain::_bind_methods()
                          &JarVoxelTerrain::set_lod_automatic_update_distance);
     ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_automatic_update_distance"), "set_lod_automatic_update_distance",
                  "get_lod_automatic_update_distance");
+
+    //-------------------------------------------------- POPULATION --------------------------------------------------
+    ADD_GROUP("Population", "population_");
+    ClassDB::bind_method(D_METHOD("get_terrain_details"), &JarVoxelTerrain::get_terrain_details);
+    ClassDB::bind_method(D_METHOD("set_terrain_details", "value"), &JarVoxelTerrain::set_terrain_details);
+    ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "population_terrain_details", PROPERTY_HINT_TYPE_STRING,
+                              String::num(Variant::OBJECT) + "/" + String::num(PROPERTY_HINT_RESOURCE_TYPE) +
+                                  ":JarTerrainDetail"),
+                 "set_terrain_details", "get_terrain_details");
 
     BIND_ENUM_CONSTANT(SDF::SDF_OPERATION_UNION);
     BIND_ENUM_CONSTANT(SDF::SDF_OPERATION_SUBTRACTION);
@@ -139,6 +153,16 @@ Node3D *JarVoxelTerrain::get_player_node() const
 void JarVoxelTerrain::set_player_node(Node3D *playerNode)
 {
     _playerNode = playerNode;
+}
+
+JarWorld *JarVoxelTerrain::get_world_node() const
+{
+    return _worldNode;
+}
+
+void JarVoxelTerrain::set_world_node(JarWorld *worldNode)
+{
+    _worldNode = worldNode;
 }
 
 bool JarVoxelTerrain::is_building() const
@@ -324,7 +348,7 @@ void JarVoxelTerrain::initialize()
 void JarVoxelTerrain::process()
 {
     float delta = get_process_delta_time();
-    if (!_isBuilding && !_meshComputeScheduler->is_meshing() &&_voxelLod.process(*this, false))
+    if (!_isBuilding && !_meshComputeScheduler->is_meshing() && _voxelLod.process(*this, false))
         build();
     _meshComputeScheduler->process(*this);
 
@@ -353,7 +377,8 @@ void printUniqueLoDValues(const std::vector<int> &lodValues)
 
 void JarVoxelTerrain::build()
 {
-    if(_isBuilding || _meshComputeScheduler->is_meshing()) return;
+    if (_isBuilding || _meshComputeScheduler->is_meshing())
+        return;
     std::thread([this]() {
         // UtilityFunctions::print("start building");
         _isBuilding = true;
@@ -392,7 +417,8 @@ void JarVoxelTerrain::process_chunk_queue(float delta)
         if (chunk == nullptr)
             continue;
 
-        if (JarVoxelChunk* chunk = node->get_chunk()) {
+        if (JarVoxelChunk *chunk = node->get_chunk())
+        {
             chunk->update_collision_mesh();
             processed++;
         }
@@ -516,4 +542,14 @@ int JarVoxelTerrain::desired_lod(const VoxelOctreeNode &node)
 int JarVoxelTerrain::lod_at(const glm::vec3 &position) const
 {
     return _voxelLod.lod_at(position);
+}
+
+void JarVoxelTerrain::set_terrain_details(const TypedArray<JarTerrainDetail> &details)
+{
+    _terrainDetails = details;
+}
+
+TypedArray<JarTerrainDetail> JarVoxelTerrain::get_terrain_details() const
+{
+    return _terrainDetails;
 }

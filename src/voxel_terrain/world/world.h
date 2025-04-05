@@ -19,13 +19,13 @@ class JarWorld : public Node3D
     virtual ~JarWorld() = default;
 
     float get_gravity_strength() const { return gravity_strength; }
-    void set_gravity_strength(float value) { gravity_strength = value; }
+    void set_gravity_strength(const float value) { gravity_strength = value; }
 
     float get_mass() const { return mass; }
-    void set_mass(float value) { mass = value; }
+    void set_mass(const float value) { mass = value; }
 
-    virtual Vector3 get_gravity_vector(Vector3 &position) const = 0;
-    virtual float get_height(Vector3 &position) const = 0;
+    virtual Vector3 get_gravity_vector(const Vector3 &position) const = 0;
+    virtual float get_height(const Vector3 &position) const = 0;
 
   protected:
     static void _bind_methods()

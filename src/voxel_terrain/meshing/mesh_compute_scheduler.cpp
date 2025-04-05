@@ -1,6 +1,6 @@
 #include "mesh_compute_scheduler.h"
 #include "chunk_mesh_data.h"
-#include "jar_voxel_terrain.h"
+#include "voxel_terrain.h"
 // #include "adaptive_surface_nets/adaptive_surface_nets.h"
 #include "stitched_surface_nets/stitched_surface_nets.h"
 #include "voxel_octree_node.h"

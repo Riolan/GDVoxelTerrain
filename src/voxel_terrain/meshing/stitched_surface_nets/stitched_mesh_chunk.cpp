@@ -1,5 +1,5 @@
 #include "stitched_mesh_chunk.h"
-#include "jar_voxel_terrain.h"
+#include "voxel_terrain.h"
 #include "utils.h"
 
 #define LEAF_COUNT 16.0f

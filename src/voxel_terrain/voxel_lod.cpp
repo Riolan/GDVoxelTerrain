@@ -1,5 +1,5 @@
-#include "jar_voxel_lod.h"
-#include "jar_voxel_terrain.h"
+#include "voxel_lod.h"
+#include "voxel_terrain.h"
 #include "mesh_compute_scheduler.h"
 
 JarVoxelLoD::JarVoxelLoD()

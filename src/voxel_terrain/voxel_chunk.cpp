@@ -1,5 +1,6 @@
-#include "jar_voxel_chunk.h"
-#include "voxel_terrain/jar_voxel_terrain.h"
+#include "voxel_chunk.h"
+#include "chunk_detail_generator.h"
+#include "voxel_terrain/voxel_terrain.h"
 #include "voxel_terrain/voxel_octree_node.h"
 #include <godot_cpp/classes/sphere_mesh.hpp>
 #include <godot_cpp/classes/standard_material3d.hpp>
@@ -26,6 +27,32 @@ void JarVoxelChunk::_bind_methods()
                          &JarVoxelChunk::set_collider_lod_threshold);
     ADD_PROPERTY(PropertyInfo(Variant::INT, "collider_lod_threshold"), "set_collider_lod_threshold",
                  "get_collider_lod_threshold");
+}
+
+void JarVoxelChunk::_update_multi_mesh_instances(int n)
+{
+    int count = multi_mesh_instances.size();
+
+    if(count == n) return;
+    if(count < n) {
+        for (int i = count; i < n; i++)
+        {
+            MultiMeshInstance3D* multi_mesh_instance = memnew(MultiMeshInstance3D);
+            add_child(multi_mesh_instance);
+            multi_mesh_instances.push_back(multi_mesh_instance);
+        }
+    }
+    else
+    {
+        for (int i = n; i < count; i++)
+        {
+            remove_child(multi_mesh_instances[i]);
+            multi_mesh_instances[i]->queue_free();
+            multi_mesh_instances[i] = nullptr;
+        }
+        //remove null instances
+        multi_mesh_instances.erase( std::remove( std::begin(multi_mesh_instances), std::end(multi_mesh_instances), nullptr ), std::end(multi_mesh_instances) ) ;
+    }    
 }
 
 JarVoxelChunk::JarVoxelChunk() : lod(0), edge_chunk(false)
@@ -136,13 +163,6 @@ void JarVoxelChunk::set_material(Ref<ShaderMaterial> p_material)
     material = p_material;
 }
 
-// void JarVoxelChunk::_ready()
-// {
-//     array_mesh = Ref<ArrayMesh>(Object::cast_to<ArrayMesh>(*mesh_instance->get_mesh()));
-//     concave_polygon_shape =
-//     Ref<ConcavePolygonShape3D>(Object::cast_to<ConcavePolygonShape3D>(*collision_shape->get_shape())); material =
-//     Ref<ShaderMaterial>(Object::cast_to<ShaderMaterial>(*mesh_instance->get_material_override()));
-// }
 
 void JarVoxelChunk::update_chunk(JarVoxelTerrain &terrain, VoxelOctreeNode *node, ChunkMeshData *chunk_mesh_data)
 {
@@ -174,6 +194,22 @@ void JarVoxelChunk::update_chunk(JarVoxelTerrain &terrain, VoxelOctreeNode *node
     else
     {
         collision_shape->set_disabled(true);
+    }
+
+    //generate details
+    if(lod <= 0) {
+        ChunkDetailGenerator generator = ChunkDetailGenerator(terrain.get_world_node());
+        TypedArray<JarTerrainDetail> terrain_details = terrain.get_terrain_details();
+        TypedArray<MultiMesh> multi_meshes = generator.generate_details(terrain_details, *chunk_mesh_data);
+
+        _update_multi_mesh_instances(multi_meshes.size());
+        for (int i = 0; i < multi_meshes.size(); i++)
+        {
+            MultiMeshInstance3D* multi_mesh_instance = multi_mesh_instances[i];
+            Ref<JarTerrainDetail> detail = terrain_details[i];
+            multi_mesh_instance->set_multimesh(multi_meshes[i]);
+            multi_mesh_instance->set_material_override(detail->get_material());
+        }
     }
 
     // Ref<StandardMaterial3D> stitch_material;

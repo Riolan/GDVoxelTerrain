@@ -1,5 +1,5 @@
 #include "adaptive_mesh_chunk.h"
-#include "jar_voxel_terrain.h"
+#include "voxel_terrain.h"
 #include "utils.h"
 
 const std::vector<glm::ivec3> AdaptiveMeshChunk::Offsets = {glm::ivec3(0, 0, 0), glm::ivec3(1, 0, 0), glm::ivec3(0, 1, 0),

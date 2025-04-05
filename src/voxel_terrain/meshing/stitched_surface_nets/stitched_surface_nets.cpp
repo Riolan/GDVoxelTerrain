@@ -3,7 +3,7 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
-#include "jar_voxel_terrain.h"
+#include "voxel_terrain.h"
 #include "utility/utils.h"
 
 StitchedSurfaceNets::StitchedSurfaceNets(const JarVoxelTerrain &terrain, const VoxelOctreeNode &chunk)

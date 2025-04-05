@@ -1,7 +1,7 @@
 #ifndef PLANE_SDF_H
 #define PLANE_SDF_H
 
-#include "jar_signed_distance_field.h"
+#include "signed_distance_field.h"
 
 class JarPlaneSdf : public JarSignedDistanceField
 {

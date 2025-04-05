@@ -20,6 +20,12 @@ layout(set=1, binding = 0) uniform Matrices {
 	mat4 inv_view_projection;
 } matrices;
 
+layout(set=1, binding = 1) uniform Properties {
+	vec4 color;
+	vec3 position;
+    float radius;
+} properties;
+
 
 bool intersectSphere(vec3 ray_origin, vec3 ray_dir, vec3 sphere_center, float sphere_radius, out vec2 t) {
     vec3 oc = ray_origin - sphere_center;
@@ -79,19 +85,18 @@ void main() {
     vec3 ray_dir = normalize(world_pos.xyz - ray_origin);
 
     // Sphere properties
-    vec3 sphere_center = vec3(0.0, -4146, 0.0); 
-    float sphere_radius = 5000.0;
 
 	vec2 t;
-    if (intersectSphere(ray_origin, ray_dir, sphere_center, sphere_radius, t)) {
+    if (intersectSphere(ray_origin, ray_dir, properties.position, properties.radius, t)) {
 		float hit_point = min(t.y, linear_depth);
-		float strength = (hit_point - t.x) / (sphere_radius * 2.0f);
+		float strength = (hit_point - t.x) / (properties.radius * 2.0f);
 		if(strength < 0.0f) {
 			strength = 0.0f;
 		}
 		strength = pow(strength, 1.2f);
-        vec4 atmosphere_color = vec4(0.4, 0.6, 0.9, 1.0f);
-		vec4 color = mix(original_color, atmosphere_color, strength);
+        // vec4 atmosphere_color = vec4(0.4, 0.6, 0.9, 1.0f);
+        // vec4 atmosphere_color = vec4(0.4, 0.6, 0.9, 1.0f);
+		vec4 color = mix(original_color, properties.color, strength);
         imageStore(color_image, uv, color);
     }
 	// imageStore(color_image, uv, original_color);

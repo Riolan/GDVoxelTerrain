@@ -1,7 +1,7 @@
 #ifndef SPHERE_SDF_H
 #define SPHERE_SDF_H
 
-#include "jar_signed_distance_field.h"
+#include "signed_distance_field.h"
 
 class JarSphereSdf : public JarSignedDistanceField
 {

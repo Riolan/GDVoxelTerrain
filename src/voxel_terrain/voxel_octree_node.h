@@ -2,7 +2,7 @@
 #define VOXEL_OCTREE_NODE_H
 
 #include "bounds.h"
-#include "jar_voxel_chunk.h"
+#include "voxel_chunk.h"
 #include "modify_settings.h"
 #include "octree_node.h"
 #include <algorithm>

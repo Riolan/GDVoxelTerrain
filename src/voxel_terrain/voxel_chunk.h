@@ -7,9 +7,11 @@
 #include <godot_cpp/classes/collision_shape3d.hpp>
 #include <godot_cpp/classes/concave_polygon_shape3d.hpp>
 #include <godot_cpp/classes/mesh_instance3d.hpp>
+#include <godot_cpp/classes/multi_mesh_instance3d.hpp>
 #include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/classes/shader_material.hpp>
 #include <godot_cpp/classes/static_body3d.hpp>
+#include <vector>
 
 using namespace godot;
 
@@ -38,12 +40,16 @@ class JarVoxelChunk : public Node3D
     Ref<ConcavePolygonShape3D> concave_polygon_shape;
     Ref<ShaderMaterial> material;
 
+    std::vector<MultiMeshInstance3D*> multi_mesh_instances;
+
     // std::vector<Ref<MultiMeshInstance3D>> multi_mesh_instance;
     //  Add references for grass and biome textures if necessary
     // ChunkMeshData* chunk_mesh_data;
     //  bool update_when_ready;
 
     static void _bind_methods();
+
+    void _update_multi_mesh_instances(int n);
 
   public:
     JarVoxelChunk();

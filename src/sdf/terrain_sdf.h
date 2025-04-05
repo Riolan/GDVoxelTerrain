@@ -1,7 +1,7 @@
 #ifndef TERRAIN_SDF_H
 #define TERRAIN_SDF_H
 
-#include "jar_signed_distance_field.h"
+#include "signed_distance_field.h"
 #include <godot_cpp/classes/fast_noise_lite.hpp>
 
 class JarTerrainSdf : public JarSignedDistanceField

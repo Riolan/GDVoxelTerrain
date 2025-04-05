@@ -1,7 +1,7 @@
 #ifndef MODIFY_SETTINGS_H
 #define MODIFY_SETTINGS_H
 
-#include "jar_signed_distance_field.h"
+#include "signed_distance_field.h"
 #include "bounds.h"
 #include "sdf_operations.h"
 

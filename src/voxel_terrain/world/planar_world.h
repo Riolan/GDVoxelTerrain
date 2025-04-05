@@ -18,14 +18,14 @@ class JarPlanarWorld : public JarWorld
     Vector3 get_normal() const { return normal; }
     void set_normal(const Vector3 &value) { normal = value; }
 
-    Vector3 get_gravity_vector(Vector3 &position) const override
+    Vector3 get_gravity_vector(const Vector3 &position) const override
     {
         return normal * -get_gravity_strength();
     }
 
-    float get_height(Vector3 &position) const override
+    float get_height(const Vector3 &position) const override
     {
-        return position.dot(normal) - surface_height;
+        return (position - get_global_position()).dot(normal) - surface_height;
     }
 
   protected:

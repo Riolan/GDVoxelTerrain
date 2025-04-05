@@ -12,16 +12,16 @@ class JarSphericalWorld : public JarWorld
 
   public:
     float get_sphere_radius() const { return sphere_radius; }
-    void set_sphere_radius(float value) { sphere_radius = value; }
+    void set_sphere_radius(const float value) { sphere_radius = value; }
 
-    Vector3 get_gravity_vector(Vector3 &position) const override
+    Vector3 get_gravity_vector(const Vector3 &position) const override
     {
-        return -position.normalized() * get_gravity_strength();
+        return -(position - get_global_position()).normalized() * get_gravity_strength();
     }
 
-    float get_height(Vector3 &position) const override
+    float get_height(const Vector3 &position) const override
     {
-        return sphere_radius - position.length();
+        return (position - get_global_position()).length() - sphere_radius;
     }
 
   protected:

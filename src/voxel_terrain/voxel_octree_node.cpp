@@ -1,5 +1,5 @@
 #include "voxel_octree_node.h"
-#include "jar_voxel_terrain.h"
+#include "voxel_terrain.h"
 #include <algorithm>
 #include <cmath>
 #include <execution>
