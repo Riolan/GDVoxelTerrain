@@ -22,6 +22,7 @@ class JarTerrainDetail : public JarTerrainPopulator
     Ref<Material> material;
     float density = 1.0f;
     int max_lod = 0;
+    bool shadows_enabled = false;
 
   public:
     virtual ~JarTerrainDetail() = default;
@@ -31,12 +32,14 @@ class JarTerrainDetail : public JarTerrainPopulator
     Ref<Material> get_material() const { return material; }
     float get_density() const { return density; }
     int get_max_lod() const { return max_lod; }
+    bool get_shadows_enabled() const { return shadows_enabled; }
 
     // Setters
     void set_mesh(const Ref<Mesh> &value) { mesh = value; }
     void set_material(const Ref<Material> &value) { material = value; }
     void set_density(float value) { density = value; }
     void set_max_lod(int value) { max_lod = value; }
+    void set_shadows_enabled(int value) { shadows_enabled = value; }
 
   protected:
     static void _bind_methods() {
@@ -56,6 +59,11 @@ class JarTerrainDetail : public JarTerrainPopulator
         ClassDB::bind_method(D_METHOD("get_max_lod"), &JarTerrainDetail::get_max_lod);
         ClassDB::bind_method(D_METHOD("set_max_lod", "value"), &JarTerrainDetail::set_max_lod);
         ADD_PROPERTY(PropertyInfo(Variant::INT, "max_lod"), "set_max_lod", "get_max_lod");
+
+
+        ClassDB::bind_method(D_METHOD("get_shadows_enabled"), &JarTerrainDetail::get_shadows_enabled);
+        ClassDB::bind_method(D_METHOD("set_shadows_enabled", "value"), &JarTerrainDetail::set_shadows_enabled);
+        ADD_PROPERTY(PropertyInfo(Variant::BOOL, "shadows_enabled"), "set_shadows_enabled", "get_shadows_enabled");
     }
 };
 

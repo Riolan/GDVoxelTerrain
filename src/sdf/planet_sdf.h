@@ -52,6 +52,7 @@ protected:
             pos.z
         );
 
+        if(height < 0.0f) return 0.5f * height * _noiseScale;
         return (height) * _noiseScale;
     }
 
@@ -59,14 +60,13 @@ protected:
         const glm::vec3 to_center = pos - _center;
         const float base_distance = glm::length(to_center) - _radius;
         
-        if(base_distance > _noiseScale * 2.0f) {
+        if(base_distance > _noiseScale * 1.25f) {
             // Early exit for points far outside noise influence
             return base_distance;
         }
 
         const float displacement = get_spherical_displacement(pos);
         
-        // Combine sphere SDF with noise displacement
         return base_distance - displacement;
     }
 

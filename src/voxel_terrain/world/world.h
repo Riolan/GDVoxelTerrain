@@ -24,6 +24,7 @@ class JarWorld : public Node3D
     float get_mass() const { return mass; }
     void set_mass(const float value) { mass = value; }
 
+    //inputs are assumed to be in local space
     virtual Vector3 get_gravity_vector(const Vector3 &position) const = 0;
     virtual float get_height(const Vector3 &position) const = 0;
 

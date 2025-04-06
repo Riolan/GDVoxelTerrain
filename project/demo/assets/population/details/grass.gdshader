@@ -1,5 +1,5 @@
 shader_type spatial;
-
+render_mode cull_disabled, world_vertex_coords;
 uniform vec3 grass_color: source_color = vec3(0.8, 1.0, 0.3);
 
 void vertex() {
@@ -8,7 +8,10 @@ void vertex() {
 
 void fragment() {
 	// Called for every pixel the material is visible on.
-	ALBEDO = grass_color;	
+	NORMAL = FRONT_FACING ? NORMAL : -NORMAL;
+	ALBEDO = grass_color;
+	SPECULAR = 0.1;
+	ROUGHNESS = 0.8;	
 }
 
 //void light() {

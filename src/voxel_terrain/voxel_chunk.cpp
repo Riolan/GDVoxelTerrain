@@ -40,6 +40,7 @@ void JarVoxelChunk::_update_multi_mesh_instances(int n)
             MultiMeshInstance3D* multi_mesh_instance = memnew(MultiMeshInstance3D);
             add_child(multi_mesh_instance);
             multi_mesh_instances.push_back(multi_mesh_instance);
+            multi_mesh_instance->set_position(Vector3(0, 0, 0));
         }
     }
     else
@@ -209,6 +210,7 @@ void JarVoxelChunk::update_chunk(JarVoxelTerrain &terrain, VoxelOctreeNode *node
             Ref<JarTerrainDetail> detail = terrain_details[i];
             multi_mesh_instance->set_multimesh(multi_meshes[i]);
             multi_mesh_instance->set_material_override(detail->get_material());
+            multi_mesh_instance->set_cast_shadows_setting(detail->get_shadows_enabled() ? MeshInstance3D::SHADOW_CASTING_SETTING_ON : MeshInstance3D::SHADOW_CASTING_SETTING_OFF);
         }
     }
 

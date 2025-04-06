@@ -60,7 +60,7 @@ class JarTerrainPopulator : public Resource
     }
 
     bool is_slope_in_range(const float slope) const {
-        return slope >= minimum_slope;
+        return slope <= minimum_slope;
     }
 
   protected:

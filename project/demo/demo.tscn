@@ -5,17 +5,14 @@
 [ext_resource type="JarPlanetSdf" uid="uid://c0w3b174vgmm7" path="res://demo/planet_sdf.tres" id="2_onu7k"]
 [ext_resource type="Script" uid="uid://02ob37nu5at8" path="res://demo/terrain_editor.gd" id="3_8rpa4"]
 [ext_resource type="JarTerrainDetail" uid="uid://d0oay8xwjjuf3" path="res://demo/assets/population/details/grass_detail.tres" id="3_onvmd"]
+[ext_resource type="Material" uid="uid://bnto51e7djra7" path="res://demo/assets/water/water_material.tres" id="4_oeqrt"]
 [ext_resource type="Script" uid="uid://bek13g43nt3gk" path="res://demo/post_processing/atmosphere/post_processing_atmosphere.gd" id="4_s1s6j"]
 [ext_resource type="Material" uid="uid://55tbedv6qxva" path="res://demo/assets/space/space_sky.tres" id="6_onvmd"]
 [ext_resource type="Script" uid="uid://bhjsuh0weeh6j" path="res://demo/label.gd" id="8_onvmd"]
 
 [sub_resource type="SphereMesh" id="SphereMesh_onvmd"]
-radius = 4096.0
-height = 8192.0
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_onvmd"]
-transparency = 1
-albedo_color = Color(0.329412, 0.772549, 1, 0.278431)
+radius = 4075.0
+height = 8150.0
 
 [sub_resource type="CompositorEffect" id="CompositorEffect_onu7k"]
 resource_local_to_scene = false
@@ -48,7 +45,8 @@ tonemap_mode = 3
 [node name="Demo" type="Node3D"]
 
 [node name="JarSphericalWorld" type="JarSphericalWorld" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4146, 0)
+sphere_radius = 4096.0
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4196, 0)
 
 [node name="JarVoxelTerrain" type="JarVoxelTerrain" parent="JarSphericalWorld" node_paths=PackedStringArray("player_node", "world_node")]
 player_node = NodePath("../../Camera3D")
@@ -57,14 +55,13 @@ size = 20
 chunk_scene = ExtResource("1_0cm30")
 sdf = ExtResource("2_onu7k")
 performance_updated_colliders_per_second = 256
-lod_automatic_update = false
 lod_automatic_update_distance = 32.0
 population_terrain_details = Array[JarTerrainDetail]([ExtResource("3_onvmd")])
 transform = Transform3D(1, 0, 0.000401426, 0, 1, 0, -0.000401426, 0, 1, 0, 0, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="JarSphericalWorld"]
 mesh = SubResource("SphereMesh_onvmd")
-surface_material_override/0 = SubResource("StandardMaterial3D_onvmd")
+surface_material_override/0 = ExtResource("4_oeqrt")
 
 [node name="Camera3D" type="Camera3D" parent="." node_paths=PackedStringArray("terrain")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.08767, 19.5887, 199.553)

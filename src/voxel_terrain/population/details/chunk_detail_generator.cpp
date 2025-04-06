@@ -74,12 +74,13 @@ TypedArray<MultiMesh> ChunkDetailGenerator::generate_details(const TypedArray<Ja
                 }
 
                 Vector3 position = posA + r1 * edge1 + r2 * edge2;
-                Vector3 globalPosition = chunkCenter + position;
-                Vector3 gravity_normal = get_gravity_normal(globalPosition);
-                float height = get_height(globalPosition);
+                Vector3 worldPosition = position + chunkCenter;
+                Vector3 world_up = -get_gravity_normal(worldPosition);
+                float height = get_height(worldPosition);
 
-                // if (!detail->is_height_in_range(height))
-                //     continue;
+
+                if (!detail->is_height_in_range(height))
+                    continue;
 
                 Vector3 up = _normals[_indices[i]] + r1 * (_normals[_indices[i + 1]] - _normals[_indices[i]]) +
                              r2 * (_normals[_indices[i + 2]] - _normals[_indices[i]]);
@@ -87,13 +88,13 @@ TypedArray<MultiMesh> ChunkDetailGenerator::generate_details(const TypedArray<Ja
                               r2 * (_colors[_indices[i + 2]] - _colors[_indices[i]]);
                 up = up.normalized();
 
-                float dot = up.dot(gravity_normal);
+                float dot = up.dot(world_up);
 
                 if (detail->is_slope_in_range(dot) || color.r > 0.5)
                     continue;
 
                 if (!detail->get_align_with_normal())
-                    up = gravity_normal;
+                    up = world_up;
 
                 float r3 = DeterministicFloat(posC * (1 + d));
                 float r4 = DeterministicFloat((posA + posC) * (1 + d));

@@ -16,12 +16,12 @@ class JarSphericalWorld : public JarWorld
 
     Vector3 get_gravity_vector(const Vector3 &position) const override
     {
-        return -(position - get_global_position()).normalized() * get_gravity_strength();
+        return -(position).normalized() * get_gravity_strength();
     }
 
     float get_height(const Vector3 &position) const override
     {
-        return (position - get_global_position()).length() - sphere_radius;
+        return (position).length() - sphere_radius;
     }
 
   protected:

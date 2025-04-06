@@ -25,7 +25,7 @@ class JarPlanarWorld : public JarWorld
 
     float get_height(const Vector3 &position) const override
     {
-        return (position - get_global_position()).dot(normal) - surface_height;
+        return (position).dot(normal) - surface_height;
     }
 
   protected:

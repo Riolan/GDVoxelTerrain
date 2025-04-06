@@ -6,9 +6,10 @@
 [resource]
 mesh = ExtResource("1_7nmpp")
 material = ExtResource("1_mu4fp")
-density = 0.8
+density = 1.5
 minimum_scale = 0.3
 maximum_scale = 0.5
-minimum_height = -1000.0
+minimum_height = -19.0
 maximum_height = 1000.0
+minimum_slope = 0.85
 align_with_normal = true
