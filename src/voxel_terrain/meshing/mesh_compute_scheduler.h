@@ -3,8 +3,8 @@
 
 #include "voxel_octree_node.h"
 #include <atomic>
-#include <concurrent_priority_queue.h>
 #include <concurrent_queue.h>
+#include <concurrent_priority_queue.h>
 #include <functional>
 #include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/variant/vector3.hpp>
