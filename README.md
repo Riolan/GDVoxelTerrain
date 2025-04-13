@@ -23,6 +23,7 @@ More precisely, it uses an octree to store an SDF, which is then meshed using a 
 Contributions are welcome! Please fork the repository and submit a pull request.
 
 In particular, here are some areas of interest, in no particular order of importance:
+- Use TBB concurrent(priority)queue for the mesh schedular to ensure greater compatibility.
 - Fix build/release pipeline on github.
 - Optimizing LOD connections, i.e. remove the overdraw/duplicate triangle generation.
 - Multi-material support.
