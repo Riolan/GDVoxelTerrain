@@ -1,5 +1,5 @@
-#ifndef MESH_CHUNK_H
-#define MESH_CHUNK_H
+#ifndef STITCHED_MESH_CHUNK_H
+#define STITCHED_MESH_CHUNK_H
 
 #include "voxel_octree_node.h"
 #include <glm/glm.hpp>

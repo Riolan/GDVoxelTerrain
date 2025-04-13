@@ -1,5 +1,5 @@
-#ifndef SURFACE_NETS_H
-#define SURFACE_NETS_H
+#ifndef ADAPTIVE_SURFACE_NETS_H
+#define ADAPTIVE_SURFACE_NETS_H
 
 #include "chunk_mesh_data.h"
 #include "adaptive_mesh_chunk.h"

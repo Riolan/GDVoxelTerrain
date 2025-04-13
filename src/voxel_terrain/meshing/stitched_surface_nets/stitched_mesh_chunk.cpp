@@ -57,6 +57,7 @@ StitchedMeshChunk::StitchedMeshChunk(const JarVoxelTerrain &terrain, const Voxel
     Bounds bounds = chunk.get_bounds(terrain.get_octree_scale()).expanded(leafSize - 0.001f);
     nodes.clear();
     terrain.get_voxel_leaves_in_bounds(bounds, chunk.get_lod(), nodes);
+    // terrain.get_voxel_leaves_in_bounds(chunk.get_bounds(terrain.get_octree_scale()).expanded( - 0.001f), chunk.get_lod(), nodes);
     innerNodeCount = nodes.size();
     bounds = bounds.expanded(0.001f);
 

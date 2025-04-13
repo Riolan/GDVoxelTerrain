@@ -1,5 +1,5 @@
-#ifndef SURFACE_NETS_H
-#define SURFACE_NETS_H
+#ifndef STITCHED_SURFACE_NETS_H
+#define STITCHED_SURFACE_NETS_H
 
 #include "chunk_mesh_data.h"
 #include "stitched_mesh_chunk.h"

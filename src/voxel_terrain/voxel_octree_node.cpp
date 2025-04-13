@@ -247,8 +247,8 @@ void VoxelOctreeNode::build(JarVoxelTerrain &terrain)
 
 bool VoxelOctreeNode::has_surface(const JarVoxelTerrain &terrain, const float value)
 {
-    return std::abs(value) < (1 << _size) * terrain.get_octree_scale() * 1.44224957f *
-                                 1.5f; //(3*(1/2)^3)^(1/3) = 1.44224957 for d instead of r
+    //(3*(1/2)^3)^(1/3) = 1.44224957 for d instead of r
+    return std::abs(value) < (1 << _size) * terrain.get_octree_scale() * 1.44224957f * 1.75f; 
 }
 
 void VoxelOctreeNode::modify_sdf_in_bounds(JarVoxelTerrain &terrain, const ModifySettings &settings)

@@ -6,6 +6,7 @@ extends Camera3D
 const MIN_MOVE_SPEED = 0.5;
 const MAX_MOVE_SPEED = 4096;
 var rotating : bool = false
+var triangle : bool = false
 	
 func _ready() -> void:
 	set_mouse(true);
@@ -33,12 +34,18 @@ func _input(event) -> void:
 		
 	if event.is_action_pressed("ui_cancel"):
 		set_mouse(!rotating);
+	if event.is_action_pressed("ui_focus_next"):
+		toggle_triangle(!triangle)
 	if event is InputEventMouseMotion and rotating:
 		rotation += Vector3(-event.relative.y * 0.0025, -event.relative.x * 0.0025, 0);
 		rotation.x = clamp(rotation.x, -PI/2.2, PI/2.2)
 	if event.is_action_pressed("terrain_update_lod"):
 		terrain.force_update_lod()
-		
+
+func toggle_triangle(value: bool) -> void:
+	triangle = value;
+	get_viewport().debug_draw = Viewport.DEBUG_DRAW_WIREFRAME if triangle else Viewport.DEBUG_DRAW_DISABLED
+
 func set_mouse(value: bool) -> void:
 	rotating = value;
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if rotating else Input.MOUSE_MODE_VISIBLE;

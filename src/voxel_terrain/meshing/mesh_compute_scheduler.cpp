@@ -54,6 +54,7 @@ void MeshComputeScheduler::run_task(const JarVoxelTerrain &terrain, VoxelOctreeN
     if (!chunk.is_chunk(terrain))
         return;
     threadPool.enqueue([this, &terrain, &chunk]() {
+        // auto meshCompute = AdaptiveSurfaceNets(terrain, chunk);
         auto meshCompute = StitchedSurfaceNets(terrain, chunk);
         ChunkMeshData *chunkMeshData = meshCompute.generate_mesh_data(terrain);
         ChunksToProcess.push(std::make_pair(&(chunk), chunkMeshData));
