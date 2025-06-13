@@ -1,6 +1,14 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+
+#ifdef _MSC_VER
+    #define FORCE_INLINE __forceinline
+#else
+    #define FORCE_INLINE __attribute__((always_inline)) inline
+#endif
+
+
 #include "bounds.h"
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/variant/packed_float32_array.hpp>

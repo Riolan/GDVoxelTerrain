@@ -28,9 +28,9 @@ class JarVoxelLoD
     float _autoMeshCoolDown;
     glm::vec3 _cameraPosition;
 
-    inline float lod_to_grid_size(const int lod) const;
-    inline glm::vec3 snap_to_grid(const glm::vec3 pos, const float grid_size) const;
-    inline bool is_in_lod_shell(int lod, glm::vec3 pos, glm::vec3 cam_pos) const;
+    /* inline */ float lod_to_grid_size(const int lod) const;
+    /* inline */ glm::vec3 snap_to_grid(const glm::vec3 pos, const float grid_size) const;
+    /* inline */ bool is_in_lod_shell(int lod, glm::vec3 pos, glm::vec3 cam_pos) const;
 
   protected:
     

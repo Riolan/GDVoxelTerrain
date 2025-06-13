@@ -38,6 +38,19 @@ if env['PLATFORM'] == 'windows':
     elif env['CXX'] == 'cl':
         env.Append(CXXFLAGS=['/EHsc'])  # Apply /EHsc for MSVC
 
+print(env['PLATFORM'])
+
+if env['platform'] == 'linux':
+    print("Configuring for Linux/POSIX...")
+    # On Linux, pkg-config is the standard and best way to find libraries.
+    try:
+        env.ParseConfig('pkg-config --cflags --libs tbb')
+
+        print("Added tbb.")
+    except OSError:
+        print("Error: 'pkg-config --cflags --libs tbb' failed.")
+        print("Please ensure libtbb-dev is installed and pkg-config can find it.")
+        Exit(1)
 
 # Handle different platforms
 if env["platform"] == "macos":

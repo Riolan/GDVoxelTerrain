@@ -103,7 +103,7 @@ void VoxelOctreeNode::mark_materialized()
     }
 }
 
-inline bool VoxelOctreeNode::is_materialized()
+/* inline */ bool VoxelOctreeNode::is_materialized()
 {
     // return false;
     return _isMaterialized == 0b11111111;
@@ -114,22 +114,22 @@ JarVoxelChunk *VoxelOctreeNode::get_chunk() const
     return _chunk;
 }
 
-inline bool VoxelOctreeNode::is_chunk(const JarVoxelTerrain &terrain) const
+/* inline */ bool VoxelOctreeNode::is_chunk(const JarVoxelTerrain &terrain) const
 {
     return _size == (LoD + terrain.get_min_chunk_size());
 }
 
-inline bool VoxelOctreeNode::is_above_chunk(const JarVoxelTerrain &terrain) const
+/* inline */ bool VoxelOctreeNode::is_above_chunk(const JarVoxelTerrain &terrain) const
 {
     return _size > (LoD + terrain.get_min_chunk_size());
 }
 
-inline bool VoxelOctreeNode::is_above_min_chunk(const JarVoxelTerrain &terrain) const
+/* inline */ bool VoxelOctreeNode::is_above_min_chunk(const JarVoxelTerrain &terrain) const
 {
     return _size > (terrain.get_min_chunk_size());
 }
 
-inline bool VoxelOctreeNode::is_one_above_chunk(const JarVoxelTerrain &terrain) const
+/* inline */ bool VoxelOctreeNode::is_one_above_chunk(const JarVoxelTerrain &terrain) const
 {
     return _size == (LoD + terrain.get_min_chunk_size() + 1);
 }
@@ -185,12 +185,12 @@ bool VoxelOctreeNode::is_any_children_enqueued() const
     return false;
 }
 
-inline bool VoxelOctreeNode::should_delete_chunk(const JarVoxelTerrain &terrain) const
+/* inline */ bool VoxelOctreeNode::should_delete_chunk(const JarVoxelTerrain &terrain) const
 {
     return false;
 }
 
-inline uint16_t VoxelOctreeNode::compute_boundaries(const JarVoxelTerrain &terrain) const
+/* inline */ uint16_t VoxelOctreeNode::compute_boundaries(const JarVoxelTerrain &terrain) const
 {
     static const std::vector<glm::vec3> offsets = {glm::vec3(1, 0, 0), glm::vec3(-1, 0, 0),
         glm::vec3(0, 1, 0), glm::vec3(0, -1, 0),
@@ -393,7 +393,7 @@ void VoxelOctreeNode::get_voxel_leaves_in_bounds_excluding_bounds(const JarVoxel
         child->get_voxel_leaves_in_bounds_excluding_bounds(terrain, acceptance_bounds, rejection_bounds, LOD, result);
 }
 
-inline std::unique_ptr<VoxelOctreeNode> VoxelOctreeNode::create_child_node(const glm::vec3 &center, int size)
+/* inline */ std::unique_ptr<VoxelOctreeNode> VoxelOctreeNode::create_child_node(const glm::vec3 &center, int size)
 {
     return std::make_unique<VoxelOctreeNode>(this, center, size);
 }

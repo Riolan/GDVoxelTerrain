@@ -13,6 +13,13 @@
 
 class JarVoxelTerrain;
 
+// *Note*
+// /* inline */ This forward declartion based is non-standard
+// try to force LTO.
+// Todo: Check me on this; and see if we can actually find a way to 
+// enforce inlining.
+
+
 class VoxelOctreeNode : public OctreeNode<VoxelOctreeNode>
 {
   private:
@@ -34,12 +41,12 @@ class VoxelOctreeNode : public OctreeNode<VoxelOctreeNode>
 
     // idea to not explore the whole tree, but only the children that are not materialized
     void mark_materialized();
-    inline bool is_materialized();
+    /* inline */ bool is_materialized();
 
-    inline bool is_one_above_chunk(const JarVoxelTerrain &terrain) const;
+    /* inline */ bool is_one_above_chunk(const JarVoxelTerrain &terrain) const;
     void populateUniqueLoDValues(std::vector<int> &lodValues) const;
 
-    inline bool should_delete_chunk(const JarVoxelTerrain &terrain) const;
+    /* inline */ bool should_delete_chunk(const JarVoxelTerrain &terrain) const;
 
   public:
     VoxelOctreeNode(int size);
@@ -50,9 +57,9 @@ class VoxelOctreeNode : public OctreeNode<VoxelOctreeNode>
     uint16_t compute_boundaries(const JarVoxelTerrain &terrain) const;
 
     JarVoxelChunk *get_chunk() const;
-    inline bool is_chunk(const JarVoxelTerrain &terrain) const;
-    inline bool is_above_chunk(const JarVoxelTerrain &terrain) const;
-    inline bool is_above_min_chunk(const JarVoxelTerrain &terrain) const;
+    /* inline */ bool is_chunk(const JarVoxelTerrain &terrain) const;
+    /* inline */ bool is_above_chunk(const JarVoxelTerrain &terrain) const;
+    /* inline */ bool is_above_min_chunk(const JarVoxelTerrain &terrain) const;
     bool is_enqueued() const;
     void finished_meshing_notify_parent_and_children() const;
     bool is_parent_enqueued() const;
@@ -60,7 +67,7 @@ class VoxelOctreeNode : public OctreeNode<VoxelOctreeNode>
 
     void build(JarVoxelTerrain &terrain);
 
-    inline bool has_surface(const JarVoxelTerrain &terrain, const float value);
+    /* inline */ bool has_surface(const JarVoxelTerrain &terrain, const float value);
     void queue_update(JarVoxelTerrain &terrain);
     void modify_sdf_in_bounds(JarVoxelTerrain &terrain, const ModifySettings &settings);
     void update_chunk(JarVoxelTerrain &terrain, ChunkMeshData *chunkMeshData);
@@ -82,7 +89,7 @@ class VoxelOctreeNode : public OctreeNode<VoxelOctreeNode>
     // private:
 
   protected:
-    inline virtual std::unique_ptr<VoxelOctreeNode> create_child_node(const glm::vec3 &center, int size) override;
+    /* inline */ virtual std::unique_ptr<VoxelOctreeNode> create_child_node(const glm::vec3 &center, int size) override;
 };
 
 #endif // VOXEL_OCTREE_NODE_H
